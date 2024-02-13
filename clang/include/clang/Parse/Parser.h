@@ -1665,6 +1665,13 @@ private:
       SmallVectorImpl<IdentifierLocPair> &protocolIdents,
       SourceLocation &rAngleLoc, bool mayBeProtocolList = true);
 
+  /// Parse a conditional-expression that must be followed by a closing
+  /// parenthesis; call this after the LParen has already been consumed.
+  ///
+  /// This is a helper for parsing [[assume()]], contract_assert(), pre(),
+  /// etc.
+  ExprResult ParseConditionalExpression();
+
   void HelperActionsForIvarDeclarations(ObjCContainerDecl *interfaceDecl,
                                         SourceLocation atLoc,
                                         BalancedDelimiterTracker &T,

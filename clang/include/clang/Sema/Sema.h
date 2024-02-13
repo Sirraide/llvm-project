@@ -6990,6 +6990,12 @@ public:
                             bool WarnOnNonAbstractTypes,
                             SourceLocation DtorLoc);
 
+  /// ActOnCXXContractAssertExpr - Parsed a C++ 'contract_assert' expression
+  ExprResult ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
+                                        Expr *AssertExpr, SourceLocation RParen);
+  ExprResult BuildCXXContractAssertExpr(SourceLocation KeyLoc, Expr *AssertExpr,
+                                        SourceLocation RParen);
+
   ExprResult ActOnNoexceptExpr(SourceLocation KeyLoc, SourceLocation LParen,
                                Expr *Operand, SourceLocation RParen);
   ExprResult BuildCXXNoexceptExpr(SourceLocation KeyLoc, Expr *Operand,

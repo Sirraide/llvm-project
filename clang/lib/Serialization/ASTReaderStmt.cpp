@@ -1939,6 +1939,13 @@ void ASTStmtReader::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   E->CXXDeleteExprBits.Loc = readSourceLocation();
 }
 
+void ASTStmtReader::VisitCXXContractAssertExpr(CXXContractAssertExpr* E) {
+  VisitExpr(E);
+  E->AssertCondition = Record.readSubExpr();
+  E->KeywordLoc = readSourceLocation();
+  E->RParenLoc = readSourceLocation();
+}
+
 void ASTStmtReader::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {
   VisitExpr(E);
 

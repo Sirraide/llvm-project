@@ -2320,6 +2320,12 @@ void StmtPrinter::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   PrintExpr(E->getArgument());
 }
 
+void StmtPrinter::VisitCXXContractAssertExpr(CXXContractAssertExpr* E) {
+  OS << "contract_assert(";
+  PrintExpr(E->getAssertCondition());
+  OS << ")";
+}
+
 void StmtPrinter::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {
   PrintExpr(E->getBase());
   if (E->isArrow())

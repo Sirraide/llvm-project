@@ -2747,6 +2747,10 @@ DEF_TRAVERSE_STMT(CXXInheritedCtorInitExpr, {})
 DEF_TRAVERSE_STMT(CXXNullPtrLiteralExpr, {})
 DEF_TRAVERSE_STMT(CXXStdInitializerListExpr, {})
 
+DEF_TRAVERSE_STMT(CXXContractAssertExpr, {
+  TRY_TO(TraverseStmt(S->getAssertCondition()));
+})
+
 DEF_TRAVERSE_STMT(CXXPseudoDestructorExpr, {
   TRY_TO(TraverseNestedNameSpecifierLoc(S->getQualifierLoc()));
   if (TypeSourceInfo *ScopeInfo = S->getScopeTypeInfo())

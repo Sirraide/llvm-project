@@ -1240,6 +1240,13 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
     return mergeCanThrow(CT, canSubStmtsThrow(*this, DE));
   }
 
+  case Expr::CXXContractAssertExprClass: {
+    // FIXME: Should also check if the contract violation handler can throw
+    //        if the semantic is not set to ignored.
+    auto *CAE = cast<CXXContractAssertExpr>(S);
+    return canThrow(CAE->getAssertCondition());
+  }
+
   case Expr::CXXBindTemporaryExprClass: {
     auto *BTE = cast<CXXBindTemporaryExpr>(S);
     // The bound temporary has to be destroyed again, which might throw.

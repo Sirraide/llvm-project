@@ -1076,6 +1076,10 @@ def err_static_mutable_lambda : Error<
 def err_static_lambda_captures : Error<
   "a static lambda cannot have any captures">;
 
+// C++26 contracts
+def err_expected_conditional_expression : Error<
+  "parentheses are required around this expression here">;
+
 // Availability attribute
 def err_expected_version : Error<
   "expected a version of the form 'major[.minor[.subminor]]'">;

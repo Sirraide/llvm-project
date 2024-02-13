@@ -1932,6 +1932,13 @@ void ASTStmtWriter::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   Code = serialization::EXPR_CXX_DELETE;
 }
 
+void ASTStmtWriter::VisitCXXContractAssertExpr(CXXContractAssertExpr *E) {
+  VisitExpr(E);
+  Record.AddStmt(E->getAssertCondition());
+  Record.AddSourceLocation(E->KeywordLoc);
+  Record.AddSourceLocation(E->RParenLoc);
+}
+
 void ASTStmtWriter::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {
   VisitExpr(E);
 

@@ -179,6 +179,51 @@ ExprResult Parser::ParseAssignmentExpression(TypeCastState isTypeCast) {
   return ParseRHSOfBinaryExpression(LHS, prec::Assignment);
 }
 
+ExprResult Parser::ParseConditionalExpression() {
+  if (Tok.is(tok::code_completion)) {
+    cutOffParsing();
+    Actions.CodeCompleteExpression(getCurScope(),
+                                   PreferredType.get(Tok.getLocation()));
+    return ExprError();
+  }
+
+  TentativeParsingAction TPA(*this);
+  ExprResult Res = ParseCastExpression(
+      AnyCastExpr, /*isAddressOfOperand=*/false, NotTypeCast);
+  Res = Actions.CorrectDelayedTyposInExpr(
+      ParseRHSOfBinaryExpression(Res, prec::Conditional));
+  if (Res.isInvalid()) {
+    TPA.Commit();
+    return Res;
+  }
+
+  if (!Tok.is(tok::r_paren)) {
+    // Emit a better diagnostic if this is an otherwise valid expression that
+    // is not allowed here.
+    TPA.Revert();
+    if (!Res.isInvalid()) {
+      Sema::TentativeAnalysisScope Scope(Actions);
+      Res = ParseExpression();
+    } else {
+      Res = ParseExpression();
+    }
+
+    if (!Res.isInvalid() && Tok.is(tok::r_paren)) {
+      auto *E = Res.get();
+      Diag(E->getBeginLoc(), diag::err_expected_conditional_expression)
+          << FixItHint::CreateInsertion(E->getBeginLoc(), "(")
+          << FixItHint::CreateInsertion(PP.getLocForEndOfToken(E->getEndLoc()),
+                                        ")")
+          << E->getSourceRange();
+    }
+
+    return Res;
+  }
+
+  TPA.Commit();
+  return Res;
+}
+
 /// Parse an assignment expression where part of an Objective-C message
 /// send has already been parsed.
 ///
@@ -771,6 +816,7 @@ class CastExpressionIdValidator final : public CorrectionCandidateCallback {
 /// [C++11] 'noexcept' '(' expression ')' [C++11 5.3.7]
 /// [C++]   new-expression
 /// [C++]   delete-expression
+/// [C++26] assert-expression
 ///
 ///       unary-operator: one of
 ///         '&'  '*'  '+'  '-'  '~'  '!'
@@ -855,6 +901,18 @@ class CastExpressionIdValidator final : public CorrectionCandidateCallback {
 ///       delete-expression: [C++ 5.3.5]
 ///                   '::'[opt] 'delete' cast-expression
 ///                   '::'[opt] 'delete' '[' ']' cast-expression
+///
+///       assert-expression: [C++ TBD]
+///                   'contract_assert' contract
+///
+///       contract: [C++ TBD]
+///                   contract-condition
+///
+///       contract-condition: [C++ TBD]
+///                   '(' return-name[opt] conditional-expression ')'
+///
+///       return-name: [C++ TBD]
+///                   identifier ':'
 ///
 /// [GNU/Embarcadero] unary-type-trait:
 ///                   '__is_arithmetic'
@@ -1732,6 +1790,24 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
     Res = ParseCXXDeleteExpression(false, Tok.getLocation());
     AllowSuffix = false;
     break;
+
+  case tok::kw_contract_assert: { // [C++26] assert-expression
+    if (NotPrimaryExpression)
+      *NotPrimaryExpression = true;
+    SourceLocation KeyLoc = ConsumeToken();
+    BalancedDelimiterTracker T(*this, tok::l_paren);
+    if (T.expectAndConsume(diag::err_expected_lparen_after, "contract_assert"))
+      return ExprError();
+
+    Res = ParseConditionalExpression();
+    T.consumeClose();
+    if (!Res.isInvalid())
+      Res = Actions.ActOnCXXContractAssertExpr(KeyLoc, Res.get(),
+                                               T.getCloseLocation());
+
+    AllowSuffix = false;
+    break;
+  }
 
   case tok::kw_requires: // [C++2a] requires-expression
     Res = ParseRequiresExpression();

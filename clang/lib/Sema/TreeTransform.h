@@ -3386,6 +3386,17 @@ public:
                                     Operand);
   }
 
+  /// Build a new C++ "contract_assert" expression.
+  ///
+  /// By default, performs semantic analysis to build the new expression.
+  /// Subclasses may override this routine to provide different behavior.1
+  ExprResult RebuildCXXContractAssertExpr(SourceLocation KeywordLoc,
+                                         Expr *AssertCondition,
+                                         SourceLocation RParenLoc) {
+    return getSema().ActOnCXXContractAssertExpr(KeywordLoc, AssertCondition,
+                                            RParenLoc);
+  }
+
   /// Build a new type trait expression.
   ///
   /// By default, performs semantic analysis to build the new expression.
@@ -12765,6 +12776,17 @@ TreeTransform<Derived>::TransformCXXDeleteExpr(CXXDeleteExpr *E) {
 
   return getDerived().RebuildCXXDeleteExpr(
       E->getBeginLoc(), E->isGlobalDelete(), E->isArrayForm(), Operand.get());
+}
+
+template <typename Derived>
+ExprResult TreeTransform<Derived>::TransformCXXContractAssertExpr(
+    CXXContractAssertExpr *E) {
+  ExprResult R = getDerived().TransformExpr(E->getAssertCondition());
+  if (R.isInvalid())
+    return ExprError();
+
+  return getDerived().RebuildCXXContractAssertExpr(E->getBeginLoc(), R.get(),
+                                                   E->getEndLoc());
 }
 
 template<typename Derived>

@@ -94,6 +94,7 @@ class DesignatedInitExpr;
 class ParenListExpr;
 class PseudoObjectExpr;
 class AtomicExpr;
+class CXXContractAssertExpr;
 class OMPArraySectionExpr;
 class OMPArrayShapingExpr;
 class OMPIteratorExpr;
@@ -175,6 +176,7 @@ ExprDependence computeDependence(CXXParenListInitExpr *E);
 ExprDependence computeDependence(TypeTraitExpr *E);
 ExprDependence computeDependence(ConceptSpecializationExpr *E,
                                  bool ValueDependent);
+ExprDependence computeDependence(CXXContractAssertExpr *E);
 
 ExprDependence computeDependence(SYCLUniqueStableNameExpr *E);
 ExprDependence computeDependence(PredefinedExpr *E);

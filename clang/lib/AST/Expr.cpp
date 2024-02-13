@@ -3584,6 +3584,10 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
     return cast<ConstantExpr>(this)->getSubExpr()->HasSideEffects(
         Ctx, IncludePossibleEffects);
 
+  case CXXContractAssertExprClass:
+    return cast<CXXContractAssertExpr>(this)->getAssertCondition()
+        ->HasSideEffects(Ctx, IncludePossibleEffects);
+
   case CallExprClass:
   case CXXOperatorCallExprClass:
   case CXXMemberCallExprClass:

@@ -8144,6 +8144,29 @@ ExprResult Sema::ActOnPseudoDestructorExpr(Scope *S, Expr *Base,
                                    Destructed);
 }
 
+ExprResult Sema::BuildCXXContractAssertExpr(SourceLocation KeyLoc,
+                                            Expr *AssertCondition,
+                                            SourceLocation RParen) {
+  ExprResult R = CheckPlaceholderExpr(AssertCondition);
+  if (R.isInvalid())
+    return ExprError();
+
+  if (R.get()->getDependence() == ExprDependence::None) {
+    R = PerformContextuallyConvertToBool(R.get());
+    if (R.isInvalid())
+      return ExprError();
+  }
+
+  return new (Context)
+      CXXContractAssertExpr(Context, KeyLoc, R.get(), RParen);
+}
+
+ExprResult Sema::ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
+                                            Expr *AssertCondition,
+                                            SourceLocation RParen) {
+  return BuildCXXContractAssertExpr(KeyLoc, AssertCondition, RParen);
+}
+
 ExprResult Sema::BuildCXXNoexceptExpr(SourceLocation KeyLoc, Expr *Operand,
                                       SourceLocation RParen) {
   // If the operand is an unresolved lookup expression, the expression is ill-

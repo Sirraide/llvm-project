@@ -2091,6 +2091,11 @@ void StmtProfiler::VisitCXXDeleteExpr(const CXXDeleteExpr *S) {
   VisitDecl(S->getOperatorDelete());
 }
 
+void StmtProfiler::VisitCXXContractAssertExpr(const CXXContractAssertExpr* S) {
+  VisitExpr(S);
+  VisitExpr(S->getAssertCondition());
+}
+
 void StmtProfiler::VisitCXXNewExpr(const CXXNewExpr *S) {
   VisitExpr(S);
   VisitType(S->getAllocatedType());

@@ -2738,6 +2738,44 @@ public:
   }
 };
 
+/// A C++26 contract assertion.
+class CXXContractAssertExpr final : public Expr {
+  /// The contract condition.
+  Stmt *AssertCondition;
+
+  /// The location of the 'contract_assert' keyword.
+  SourceLocation KeywordLoc;
+
+  /// The location of the closing parenthesis.
+  SourceLocation RParenLoc;
+
+  CXXContractAssertExpr(EmptyShell Empty) : Expr(CXXContractAssertExprClass, Empty) {}
+
+public:
+  friend class ASTStmtReader;
+  friend class ASTStmtWriter;
+
+  CXXContractAssertExpr(const ASTContext &C, SourceLocation KeywordLoc,
+                        Expr *AssertCondition, SourceLocation RParenLoc);
+
+  SourceLocation getBeginLoc() const LLVM_READONLY { return KeywordLoc; }
+  SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
+
+  Expr *getAssertCondition() const { return cast<Expr>(AssertCondition); }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == CXXContractAssertExprClass;
+  }
+  // Iterators
+  child_range children() {
+    return {&AssertCondition, &AssertCondition + 1};
+  }
+
+  const_child_range children() const {
+    return const_child_range(&AssertCondition, &AssertCondition + 1);
+  }
+};
+
 /// A type trait used in the implementation of various C++11 and
 /// Library TR1 trait templates.
 ///

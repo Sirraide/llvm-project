@@ -315,6 +315,16 @@ QualType CXXDeleteExpr::getDestroyedType() const {
   return ArgType->castAs<PointerType>()->getPointeeType();
 }
 
+CXXContractAssertExpr::CXXContractAssertExpr(const ASTContext &Context,
+                                             SourceLocation KeywordLoc,
+                                             Expr *AssertCondition,
+                                             SourceLocation RParenLoc)
+    : Expr(CXXContractAssertExprClass, Context.VoidTy, VK_PRValue, OK_Ordinary),
+      AssertCondition(AssertCondition), KeywordLoc(KeywordLoc),
+      RParenLoc(RParenLoc) {
+  setDependence(computeDependence(this));
+}
+
 // CXXPseudoDestructorExpr
 PseudoDestructorTypeStorage::PseudoDestructorTypeStorage(TypeSourceInfo *Info)
     : Type(Info) {
