@@ -366,6 +366,15 @@ public:
     ExtendTo64
   };
 
+  enum class ContractSemanticKind {
+    /// Always terminate on a contract violation.
+    Enforce,
+    /// Only invoke contract violation handler on a contract violation.
+    Observe,
+    /// Disable contract checking.
+    Ignore,
+  };
+
   enum class GPUDefaultStreamKind {
     /// Legacy default stream
     Legacy,

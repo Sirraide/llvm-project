@@ -5015,6 +5015,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   Args.AddLastArg(CmdArgs, options::OPT_dumpdir);
+  Args.AddLastArg(CmdArgs, options::OPT_fcontract_semantic_EQ);
 
   if (const Arg *A = Args.getLastArg(options::OPT_fthinlto_index_EQ)) {
     if (!types::isLLVMIR(Input.getType()))

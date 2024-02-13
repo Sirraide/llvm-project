@@ -7700,6 +7700,17 @@ def fexperimental_max_bitint_width_EQ:
 
 } // let Visibility = [CC1Option]
 
+def fcontract_semantic_EQ : Joined<["-"], "fcontract-semantic=">, Group<f_clang_Group>,
+  Flags<[NoArgumentUnused]>,
+  Visibility<[ClangOption, CC1Option, CLOption]>,
+  MetaVarName<"<semantic>">,
+  Values<"enforce,observe,ignore">,
+  NormalizedValues<["Enforce", "Observe", "Ignore"]>,
+  NormalizedValuesScope<"LangOptions::ContractSemanticKind">,
+  MarshallingInfoEnum<LangOpts<"ContractSemantic">, "Enforce">,
+  HelpText<"Set contract semantic. This determines how C++26 contracts assertions, preconditions, "
+  "and postconditions are checked, if at all.">;
+
 //===----------------------------------------------------------------------===//
 // Header Search Options
 //===----------------------------------------------------------------------===//

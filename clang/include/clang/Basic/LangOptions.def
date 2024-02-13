@@ -493,6 +493,9 @@ COMPATIBLE_LANGOPT(IncrementalExtensions, 1, 0, " True if we want to process sta
 
 BENIGN_LANGOPT(CheckNew, 1, 0, "Do not assume C++ operator new may not return NULL")
 
+BENIGN_ENUM_LANGOPT(ContractSemantic, ContractSemanticKind, 2, ContractSemanticKind::Enforce,
+             "Controls how contract violations are handled")
+
 #undef LANGOPT
 #undef COMPATIBLE_LANGOPT
 #undef BENIGN_LANGOPT
