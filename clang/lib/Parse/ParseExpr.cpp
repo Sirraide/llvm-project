@@ -1799,6 +1799,11 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
     if (T.expectAndConsume(diag::err_expected_lparen_after, "contract_assert"))
       return ExprError();
 
+    // Argument is still ODR-used, even if the contract semantic is set to
+    // 'ignore'.
+    EnterExpressionEvaluationContext PE{
+        Actions, Sema::ExpressionEvaluationContext::PotentiallyEvaluated};
+
     Res = ParseConditionalExpression();
     T.consumeClose();
     if (!Res.isInvalid())
