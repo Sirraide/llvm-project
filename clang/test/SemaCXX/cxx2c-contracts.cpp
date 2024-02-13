@@ -26,6 +26,7 @@ void f() {
   contract_assert(A{});
   contract_assert(B{}.foo<int>());
   contract_assert(B{}.foo<double>());
+  contract_assert((contract_assert(42), 42)); // check that contract_assert() has side effects.
   instantiate(true);
   instantiate(false);
   instantiate(nullptr); // expected-note {{in instantiation of}}
