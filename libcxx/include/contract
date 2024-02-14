@@ -1,0 +1,102 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _LIBCPP_CONTRACT
+#define _LIBCPP_CONTRACT
+
+/* contract synopsis
+
+namespace std::contracts {
+  enum class detection_mode : int {
+    predicate_false,
+    evaluation_exception,
+    evaluation_undefined_behavior,
+  };
+
+  enum class contract_semantic : int {
+    enforce,
+    observe,
+  };
+
+  enum class contract_kind : int {
+    pre,
+    post,
+    assert,
+  };
+
+  class contract_violation {
+  public:
+    source_location location() const noexcept;
+    const char* comment() const noexcept;
+    contract_kind kind() const noexcept;
+    contract_semantic semantic() const noexcept;
+    detection_mode detection_mode() const noexcept;
+    bool will_continue() const noexcept;
+  };
+}
+*/
+
+#include <__config>
+#include <source_location>
+#include <version>
+
+#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+#  pragma GCC system_header
+#endif
+
+_LIBCPP_BEGIN_NAMESPACE_STD
+
+#if _LIBCPP_STD_VER >= 26
+
+namespace contracts {
+enum class detection_mode : int {
+  predicate_false,
+  evaluation_exception,
+  evaluation_undefined_behavior,
+};
+
+enum class contract_semantic : int {
+  enforce,
+  observe,
+};
+
+enum class contract_kind : int {
+  pre,
+  post,
+  assert,
+};
+
+class contract_violation {
+  source_location _M_loc;
+  const char* _M_comment;
+  detection_mode _M_detection_mode;
+  contract_semantic _M_semantic;
+  contract_kind _M_kind;
+
+  // This is only ever instantiated by the compiler.
+  contract_violation()                                     = default;
+  contract_violation(const contract_violation&)            = delete;
+  contract_violation(contract_violation&&)                 = delete;
+  contract_violation& operator=(const contract_violation&) = delete;
+  contract_violation& operator=(contract_violation&&)      = delete;
+
+public:
+  _LIBCPP_HIDE_FROM_ABI source_location location() const noexcept { return _M_loc; }
+  _LIBCPP_HIDE_FROM_ABI const char* comment() const noexcept { return _M_comment; }
+  _LIBCPP_HIDE_FROM_ABI contract_kind kind() const noexcept { return _M_kind; }
+  _LIBCPP_HIDE_FROM_ABI contract_semantic semantic() const noexcept { return _M_semantic; }
+  _LIBCPP_HIDE_FROM_ABI detection_mode detection_mode() const noexcept { return _M_detection_mode; }
+  _LIBCPP_HIDE_FROM_ABI bool will_continue() const noexcept { return semantic() != contract_semantic::enforce; }
+};
+
+#endif // _LIBCPP_STD_VER >= 26
+
+_LIBCPP_END_NAMESPACE_STD
+
+#endif // _LIBCPP_CONTRACT
