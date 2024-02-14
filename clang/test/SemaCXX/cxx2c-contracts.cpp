@@ -1,5 +1,36 @@
 // RUN: %clang_cc1 -std=c++2c -verify %s
 
+namespace std {
+class source_location {
+  struct __impl;
+
+public:
+  static constexpr source_location
+    current(const __impl *__p = __builtin_source_location()) noexcept {
+      source_location __loc;
+      __loc.__m_impl = __p;
+      return __loc;
+  }
+  constexpr source_location() = default;
+  constexpr source_location(source_location const &) = default;
+  constexpr unsigned int line() const noexcept { return __m_impl ? __m_impl->_M_line : 0; }
+  constexpr unsigned int column() const noexcept { return __m_impl ? __m_impl->_M_column : 0; }
+  constexpr const char *file() const noexcept { return __m_impl ? __m_impl->_M_file_name : ""; }
+  constexpr const char *function() const noexcept { return __m_impl ? __m_impl->_M_function_name : ""; }
+
+private:
+  // Note: The type name "std::source_location::__impl", and its constituent
+  // field-names are required by __builtin_source_location().
+  struct __impl {
+    const char *_M_file_name;
+    const char *_M_function_name;
+    unsigned _M_line;
+    unsigned _M_column;
+  };
+  const __impl *__m_impl = nullptr;
+};
+} // namespace std
+
 struct A {
   explicit operator bool() { return true; }
 };

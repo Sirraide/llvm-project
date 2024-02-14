@@ -695,6 +695,11 @@ public:
     return llvm::ConstantInt::get(Builder.getInt1Ty(), E->getValue());
   }
 
+  Value *VisitCXXContractAssertExpr(const CXXContractAssertExpr* E) {
+    CGF.EmitCXXContractAssertExpr(E);
+    return nullptr;
+  }
+
   Value *VisitCXXPseudoDestructorExpr(const CXXPseudoDestructorExpr *E) {
     // C++ [expr.pseudo]p1:
     //   The result shall only be used as the operand for the function call

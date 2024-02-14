@@ -1942,6 +1942,8 @@ void ASTStmtReader::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
 void ASTStmtReader::VisitCXXContractAssertExpr(CXXContractAssertExpr* E) {
   VisitExpr(E);
   E->AssertCondition = Record.readSubExpr();
+  E->SourceLoc = Record.readSubExpr();
+  E->Comment = Record.readSubExpr();
   E->KeywordLoc = readSourceLocation();
   E->RParenLoc = readSourceLocation();
 }

@@ -1935,6 +1935,8 @@ void ASTStmtWriter::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
 void ASTStmtWriter::VisitCXXContractAssertExpr(CXXContractAssertExpr *E) {
   VisitExpr(E);
   Record.AddStmt(E->getAssertCondition());
+  Record.AddStmt(E->getSourceLoc());
+  Record.AddStmt(E->getComment());
   Record.AddSourceLocation(E->KeywordLoc);
   Record.AddSourceLocation(E->RParenLoc);
 }

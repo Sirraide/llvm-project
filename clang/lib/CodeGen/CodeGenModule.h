@@ -336,6 +336,7 @@ private:
   std::unique_ptr<llvm::IndexedInstrProfReader> PGOReader;
   InstrProfStats PGOStats;
   std::unique_ptr<llvm::SanitizerStatReport> SanStats;
+  llvm::FunctionCallee CXXContractViolationHandlerThunk;
 
   // A set of references that have only been seen via a weakref so far. This is
   // used to remove the weak of the reference if we ever see a direct reference
@@ -913,6 +914,10 @@ public:
   /// in AST. For address space agnostic language, e.g. C++, constant literal
   /// in AST is always in default address space.
   LangAS GetGlobalConstantAddressSpace() const;
+
+  /// Get the C++26 contract violation handler thunk. This is invoked when
+  /// a contract violation occurs.
+  llvm::FunctionCallee GetOrCreateCXXContractViolationHandlerThunk();
 
   /// Return the llvm::Constant for the address of the given global variable.
   /// If Ty is non-null and if the global doesn't exist, then it will be created

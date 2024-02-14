@@ -7014,6 +7014,8 @@ public:
   ExprResult ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
                                         Expr *AssertExpr, SourceLocation RParen);
   ExprResult BuildCXXContractAssertExpr(SourceLocation KeyLoc, Expr *AssertExpr,
+                                        SourceLocExpr *SourceLoc,
+                                        StringLiteral *Comment,
                                         SourceLocation RParen);
 
   ExprResult ActOnNoexceptExpr(SourceLocation KeyLoc, SourceLocation LParen,

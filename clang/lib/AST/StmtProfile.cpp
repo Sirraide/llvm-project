@@ -2094,6 +2094,8 @@ void StmtProfiler::VisitCXXDeleteExpr(const CXXDeleteExpr *S) {
 void StmtProfiler::VisitCXXContractAssertExpr(const CXXContractAssertExpr* S) {
   VisitExpr(S);
   VisitExpr(S->getAssertCondition());
+  VisitExpr(S->getSourceLoc());
+  VisitExpr(S->getComment());
 }
 
 void StmtProfiler::VisitCXXNewExpr(const CXXNewExpr *S) {

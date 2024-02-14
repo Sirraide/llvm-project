@@ -315,13 +315,12 @@ QualType CXXDeleteExpr::getDestroyedType() const {
   return ArgType->castAs<PointerType>()->getPointeeType();
 }
 
-CXXContractAssertExpr::CXXContractAssertExpr(const ASTContext &Context,
-                                             SourceLocation KeywordLoc,
-                                             Expr *AssertCondition,
-                                             SourceLocation RParenLoc)
+CXXContractAssertExpr::CXXContractAssertExpr(
+    const ASTContext &Context, SourceLocation KeywordLoc, Expr *AssertCondition,
+    SourceLocExpr *SourceLoc, StringLiteral *Comment, SourceLocation RParenLoc)
     : Expr(CXXContractAssertExprClass, Context.VoidTy, VK_PRValue, OK_Ordinary),
-      AssertCondition(AssertCondition), KeywordLoc(KeywordLoc),
-      RParenLoc(RParenLoc) {
+      AssertCondition(AssertCondition), SourceLoc(SourceLoc), Comment(Comment),
+      KeywordLoc(KeywordLoc), RParenLoc(RParenLoc) {
   setDependence(computeDependence(this));
 }
 

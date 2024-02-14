@@ -2749,6 +2749,7 @@ DEF_TRAVERSE_STMT(CXXStdInitializerListExpr, {})
 
 DEF_TRAVERSE_STMT(CXXContractAssertExpr, {
   TRY_TO(TraverseStmt(S->getAssertCondition()));
+  TRY_TO(TraverseStmt(S->getSourceLoc()));
 })
 
 DEF_TRAVERSE_STMT(CXXPseudoDestructorExpr, {

@@ -3391,10 +3391,12 @@ public:
   /// By default, performs semantic analysis to build the new expression.
   /// Subclasses may override this routine to provide different behavior.1
   ExprResult RebuildCXXContractAssertExpr(SourceLocation KeywordLoc,
-                                         Expr *AssertCondition,
-                                         SourceLocation RParenLoc) {
-    return getSema().ActOnCXXContractAssertExpr(KeywordLoc, AssertCondition,
-                                            RParenLoc);
+                                          Expr *AssertCondition,
+                                          SourceLocExpr *SourceLoc,
+                                          StringLiteral *Comment,
+                                          SourceLocation RParenLoc) {
+    return getSema().BuildCXXContractAssertExpr(KeywordLoc, AssertCondition,
+                                                SourceLoc, Comment, RParenLoc);
   }
 
   /// Build a new type trait expression.
@@ -12785,8 +12787,9 @@ ExprResult TreeTransform<Derived>::TransformCXXContractAssertExpr(
   if (R.isInvalid())
     return ExprError();
 
-  return getDerived().RebuildCXXContractAssertExpr(E->getBeginLoc(), R.get(),
-                                                   E->getEndLoc());
+  return getDerived().RebuildCXXContractAssertExpr(
+      E->getBeginLoc(), R.get(), E->getSourceLoc(), E->getComment(),
+      E->getEndLoc());
 }
 
 template<typename Derived>

@@ -54,6 +54,7 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Frontend/OpenMP/OMPIRBuilder.h"
 #include "llvm/IR/AttributeMask.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Intrinsics.h"
@@ -7626,4 +7627,76 @@ void CodeGenModule::moveLazyEmissionStates(CodeGenModule *NewBuilder) {
   NewBuilder->TBAA = std::move(TBAA);
 
   NewBuilder->ABI->MangleCtx = std::move(ABI->MangleCtx);
+}
+
+llvm::FunctionCallee
+CodeGenModule::GetOrCreateCXXContractViolationHandlerThunk() {
+  if (!CXXContractViolationHandlerThunk) {
+    auto Semantic = getLangOpts().getContractSemantic();
+    assert(Semantic != LangOptions::ContractSemanticKind::Ignore);
+
+    llvm::Type *Ptr = llvm::PointerType::getUnqual(VMContext);
+    llvm::Type *Args[] {Ptr, Ptr, IntTy, IntTy, IntTy};
+    auto *FTy = llvm::FunctionType::get(VoidTy, Args, /*isVarArg=*/false);
+    auto *Thunk = cast<llvm::Function>(
+        GetOrCreateLLVMFunction("__clang_call_contract_violation_handler", FTy,
+                                GlobalDecl(), /*ForVTable=*/false,
+                                /*DontDefer=*/false, /*IsThunk=*/false));
+    CXXContractViolationHandlerThunk = {FTy, Thunk};
+    Thunk->setLinkage(llvm::GlobalValue::PrivateLinkage);
+    Thunk->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+
+    // If the contract semantic is set to 'enforce', the contract violation
+    // handler never returns.
+    if (Semantic == LangOptions::ContractSemanticKind::Enforce)
+      Thunk->setDoesNotReturn();
+
+    // Create an object of type std::contracts::contract_violation. Sema
+    // has already made sure that its layout matches what we expect. This
+    // simply entails packing all of our arguments into a struct and passing
+    // a pointer to it to the handler.
+    llvm::IRBuilder<> Builder{VMContext};
+    auto *CV = llvm::StructType::get(VMContext, Args, false);
+    auto *Entry = llvm::BasicBlock::Create(VMContext, "entry", Thunk);
+
+    Builder.SetInsertPoint(Entry);
+    auto *Local = Builder.CreateAlloca(CV);
+    for (auto [I, Arg] : llvm::enumerate(Thunk->args())) {
+      auto *GEP = Builder.CreateStructGEP(CV, Local, I);
+      Builder.CreateStore(&Arg, GEP);
+    }
+
+    // Declare ::handle_contract_violation.
+    // FIXME: Only do this if this TU does not define it?
+    TargetCXXABI TargetABI = getTarget().getCXXABI();
+    StringRef name;
+    if (TargetABI.isItaniumFamily()) {
+      name = "_Z25handle_contract_violationRKNSt9contracts18contract_violationE";
+    } else if (TargetABI.isMicrosoft()) {
+      name = "?handle_contract_violation@@YAXAEBVcontract_violation@contracts@std@@@Z";
+    } else {
+      // TODO: Should we just do llvm_unreachable() here?
+      name = "handle_contract_violation";
+    }
+
+    auto *HandlerTy = llvm::FunctionType::get(VoidTy, Ptr, /*isVarArg=*/false);
+    auto *Handler = cast<llvm::Function>(
+        GetOrCreateLLVMFunction(name, HandlerTy,
+                                GlobalDecl(), /*ForVTable=*/false,
+                                /*DontDefer=*/false, /*IsThunk=*/false));
+
+    Builder.CreateCall(Handler, Local);
+
+    // If the contract semantic is set to 'enforce', and the contract violation
+    // handler returns, terminate.
+    if (Semantic == LangOptions::ContractSemanticKind::Enforce) {
+      llvm::FunctionCallee Terminate = getTerminateFn();
+      Builder.CreateCall(Terminate, {});
+      Builder.CreateUnreachable();
+    } else {
+      Builder.CreateRetVoid();
+    }
+  }
+
+  return CXXContractViolationHandlerThunk;
 }

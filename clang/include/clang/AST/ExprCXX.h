@@ -2742,6 +2742,8 @@ public:
 class CXXContractAssertExpr final : public Expr {
   /// The contract condition.
   Stmt *AssertCondition;
+  Stmt *SourceLoc;
+  Stmt *Comment;
 
   /// The location of the 'contract_assert' keyword.
   SourceLocation KeywordLoc;
@@ -2756,23 +2758,26 @@ public:
   friend class ASTStmtWriter;
 
   CXXContractAssertExpr(const ASTContext &C, SourceLocation KeywordLoc,
-                        Expr *AssertCondition, SourceLocation RParenLoc);
+                        Expr *AssertCondition, SourceLocExpr* SourceLoc,
+                        StringLiteral *Comment, SourceLocation RParenLoc);
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return KeywordLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 
   Expr *getAssertCondition() const { return cast<Expr>(AssertCondition); }
+  SourceLocExpr *getSourceLoc() const { return cast<SourceLocExpr>(SourceLoc); }
+  StringLiteral *getComment() const { return cast<StringLiteral>(Comment); }
 
   static bool classof(const Stmt *T) {
     return T->getStmtClass() == CXXContractAssertExprClass;
   }
   // Iterators
   child_range children() {
-    return {&AssertCondition, &AssertCondition + 1};
+    return {&AssertCondition, &Comment + 1};
   }
 
   const_child_range children() const {
-    return const_child_range(&AssertCondition, &AssertCondition + 1);
+    return const_child_range(&AssertCondition, &Comment + 1);
   }
 };
 
