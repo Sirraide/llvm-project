@@ -12077,6 +12077,9 @@ def err_std_source_location_impl_not_found : Error<
 def err_std_source_location_impl_malformed : Error<
   "'std::source_location::__impl' must be standard-layout and have only two 'const char *' fields '_M_file_name' and '_M_function_name', and two integral fields '_M_line' and '_M_column'">;
 
+def err_std_contracts_contract_violation_malformed : Error<
+  "'std::contracts::contract_violation' must be standard-layout and have only the following fields: 'source_location _M_loc', 'const char* _M_comment', and three integral or enum fields '_M_detection_mode', '_M_semantic', '_M_kind'">;
+
 // HLSL Diagnostics
 def err_hlsl_attr_unsupported_in_stage : Error<"attribute %0 is unsupported in '%1' shaders, requires %select{|one of the following: }2%3">;
 def err_hlsl_attr_invalid_type : Error<

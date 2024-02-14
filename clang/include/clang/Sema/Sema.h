@@ -1171,6 +1171,9 @@ public:
   /// standard library.
   LazyDeclPtr StdAlignValT;
 
+  /// The C++ "std::contracts" namespace.
+  NamespaceDecl *StdContractsNamespace;
+
   /// The C++ "std::initializer_list" template, which is defined in
   /// \<initializer_list>.
   ClassTemplateDecl *StdInitializerList;
@@ -1185,6 +1188,10 @@ public:
   /// The C++ "std::source_location::__impl" struct, defined in
   /// \<source_location>.
   RecordDecl *StdSourceLocationImplDecl;
+
+  /// The C++ "std::contracts::contract_violation" struct, defined in
+  /// \<contract>, or provided implicitly if \<contract> is not included.
+  CXXRecordDecl *StdContractsContractViolationDecl = nullptr;
 
   /// Caches identifiers/selectors for NSFoundation APIs.
   std::unique_ptr<NSAPI> NSAPIObj;
@@ -1237,6 +1244,9 @@ public:
   /// A flag to remember whether the implicit forms of operator new and delete
   /// have been declared.
   bool GlobalNewDeleteDeclared;
+
+  /// Similar, but for the global contract violation handler.
+  bool GlobalContractViolationHandlerDeclared{false};
 
   /// Describes how the expressions currently being parsed are
   /// evaluated at run-time, if at all.
@@ -6292,6 +6302,7 @@ public:
 
   NamespaceDecl *getStdNamespace() const;
   NamespaceDecl *getOrCreateStdNamespace();
+  NamespaceDecl *getOrCreateStdContractsNamespace();
 
   CXXRecordDecl *getStdBadAlloc() const;
   EnumDecl *getStdAlignValT() const;
@@ -6300,6 +6311,12 @@ public:
                                            const IdentifierInfo *MemberOrBase);
 
 private:
+  NamespaceDecl *CreateImplicitNamespaceInContext(DeclContext *Parent,
+                                                  IdentifierInfo *Name);
+
+  /// Attach a declaration to the global module fragment.
+  void AttachToGlobalModule(Decl* D);
+
   // A cache representing if we've fully checked the various comparison category
   // types stored in ASTContext. The bit-index corresponds to the integer value
   // of a ComparisonCategoryType enumerator.
@@ -6989,6 +7006,9 @@ public:
                             bool IsDelete, bool CallCanBeVirtual,
                             bool WarnOnNonAbstractTypes,
                             SourceLocation DtorLoc);
+
+  void DeclareGlobalContractViolationHandler();
+  void DeclareStdContractsContractViolation();
 
   /// ActOnCXXContractAssertExpr - Parsed a C++ 'contract_assert' expression
   ExprResult ActOnCXXContractAssertExpr(SourceLocation KeyLoc,

@@ -3062,11 +3062,7 @@ void Sema::DeclareGlobalNewDelete() {
 
     // The implicitly declared "std::bad_alloc" should live in global module
     // fragment.
-    if (TheGlobalModuleFragment) {
-      getStdBadAlloc()->setModuleOwnershipKind(
-          Decl::ModuleOwnershipKind::ReachableWhenImported);
-      getStdBadAlloc()->setLocalOwningModule(TheGlobalModuleFragment);
-    }
+    AttachToGlobalModule(getStdBadAlloc());
   }
   if (!StdAlignValT && getLangOpts().AlignedAllocation) {
     // The "std::align_val_t" enum class has not yet been declared, so build it
@@ -3077,12 +3073,7 @@ void Sema::DeclareGlobalNewDelete() {
 
     // The implicitly declared "std::align_val_t" should live in global module
     // fragment.
-    if (TheGlobalModuleFragment) {
-      AlignValT->setModuleOwnershipKind(
-          Decl::ModuleOwnershipKind::ReachableWhenImported);
-      AlignValT->setLocalOwningModule(TheGlobalModuleFragment);
-    }
-
+    AttachToGlobalModule(AlignValT);
     AlignValT->setIntegerType(Context.getSizeType());
     AlignValT->setPromotionType(Context.getSizeType());
     AlignValT->setImplicit(true);
@@ -3357,6 +3348,82 @@ bool Sema::FindDeallocationFunction(SourceLocation StartLoc, CXXRecordDecl *RD,
 
   Operator = nullptr;
   return false;
+}
+
+void Sema::DeclareGlobalContractViolationHandler() {
+  assert(false && "TODO");
+
+  /*if (GlobalContractViolationHandlerDeclared)
+    return;
+
+  // TODO: ALL OF THIS should be done at the end of the TU so we don't
+  // end up with two potentially different definitions of this type in
+  // the same TU in case contracts are used before <contract> is included.
+
+  // P2900: The Contract-Violation handler is a function named
+  // ::handle_contract_violation that is attached to the global module
+  if (getLangOpts().CPlusPlusModules && getCurrentModule())
+    PushGlobalModuleFragment(SourceLocation());
+
+  DeclareStdContractsContractViolation();
+
+  if (getLangOpts().CPlusPlusModules && getCurrentModule())
+    PopGlobalModuleFragment();*/
+}
+
+/// Find or declare the std::contracts::contract_violation class.
+void Sema::DeclareStdContractsContractViolation() {
+  assert(false && "TODO");
+  /*if (StdContractsContractViolationDecl)
+    return;
+
+  // TODO: Declare source_location implicitly.
+  CXXRecordDecl *RD = nullptr;*/
+/*  auto *II = &PP.getIdentifierTable().get("contract_violation");
+  if (StdContractsNamespace) {
+    LookupResult ResultSL(*this, II, SourceLocation(), Sema::LookupOrdinaryName);
+    if (LookupQualifiedName(ResultSL, StdContractsNamespace))
+      RD = ResultSL.getAsSingle<CXXRecordDecl>();
+  }
+
+  if (RD && RD->isCompleteDefinition()) {
+    if (RD->isUnion() || !RD->isStandardLayout() || RD->getNumBases() != 0) {
+      Diag(RD->getLocation(), diag::err_std_contracts_contract_violation_malformed);
+      return nullptr;
+    }
+  }*/
+
+  // Verify that it matches the layout we expect.
+
+  // Declare this:
+  //
+  // class contract_violation {
+  //  const source_location::__impl* _M_loc;
+  //  const char *_M_comment;
+  //  int _M_detection_mode;
+  //  int _M_semantic;
+  //  int _M_kind;
+  //
+  //  constexpr contract_violation(
+  //    const source_location::__impl* __loc,
+  //    const char *__comment,
+  //    int __mode,
+  //    int __semantic,
+  //    int __kind
+  //  ) noexcept
+  //    : _M_loc(__loc), _M_comment(__comment), _M_detection_mode(__mode),
+  //      _M_semantic(__semantic), _M_kind(__kind) {}
+  // };
+/*  auto *Contracts = getOrCreateStdContractsNamespace();
+  auto *RD = StdContractsContractViolationDecl = CXXRecordDecl::Create(
+    Context, TagTypeKind::Class, Contracts,
+      SourceLocation(), SourceLocation(),
+      &PP.getIdentifierTable().get("contract_violation"), nullptr);
+
+  AttachToGlobalModule(RD);
+  auto SLocImplPtrTy = Context.getPointerType(StdSourceLocationImplDecl->withConst());
+  auto MLoc = c*/
+
 }
 
 namespace {

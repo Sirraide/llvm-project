@@ -1130,6 +1130,8 @@ void Sema::ActOnEndOfTranslationUnit() {
     if (LateTemplateParserCleanup)
       LateTemplateParserCleanup(OpaqueParser);
 
+    /*DeclareGlobalContractViolationHandler();*/
+
     CheckDelayedMemberExceptionSpecs();
   } else {
     // If we are building a TU prefix for serialization, it is safe to transfer

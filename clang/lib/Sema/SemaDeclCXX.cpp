@@ -11954,24 +11954,48 @@ QualType Sema::CheckComparisonCategoryType(ComparisonCategoryType Kind,
   return Info->getType();
 }
 
+NamespaceDecl *Sema::CreateImplicitNamespaceInContext(DeclContext *Parent,
+                                                      IdentifierInfo *Name) {
+  // The "std" namespace has not yet been defined, so build one implicitly.
+  auto NS = NamespaceDecl::Create(Context, Context.getTranslationUnitDecl(),
+                                  /*Inline=*/false, SourceLocation(),
+                                  SourceLocation(), Name, /*PrevDecl=*/nullptr,
+                                  /*Nested=*/false);
+  NS->setImplicit(true);
+
+  // We want the created NamespaceDecl to be available for redeclaration
+  // lookups, but not for regular name lookups.
+  Parent->addDecl(NS);
+  NS->clearIdentifierNamespace();
+  return NS;
+}
+
 /// Retrieve the special "std" namespace, which may require us to
 /// implicitly define the namespace.
 NamespaceDecl *Sema::getOrCreateStdNamespace() {
   if (!StdNamespace) {
-    // The "std" namespace has not yet been defined, so build one implicitly.
-    StdNamespace = NamespaceDecl::Create(
-        Context, Context.getTranslationUnitDecl(),
-        /*Inline=*/false, SourceLocation(), SourceLocation(),
-        &PP.getIdentifierTable().get("std"),
-        /*PrevDecl=*/nullptr, /*Nested=*/false);
-    getStdNamespace()->setImplicit(true);
-    // We want the created NamespaceDecl to be available for redeclaration
-    // lookups, but not for regular name lookups.
-    Context.getTranslationUnitDecl()->addDecl(getStdNamespace());
-    getStdNamespace()->clearIdentifierNamespace();
+    StdNamespace = CreateImplicitNamespaceInContext(
+        Context.getTranslationUnitDecl(), &PP.getIdentifierTable().get("std"));
   }
 
   return getStdNamespace();
+}
+
+NamespaceDecl *Sema::getOrCreateStdContractsNamespace() {
+  if (!StdContractsNamespace) {
+    StdContractsNamespace = CreateImplicitNamespaceInContext(
+        getStdNamespace(), &PP.getIdentifierTable().get("contracts"));
+  }
+
+  return StdContractsNamespace;
+}
+
+void Sema::AttachToGlobalModule(Decl* D) {
+  if (!TheGlobalModuleFragment)
+    return;
+
+  D->setModuleOwnershipKind(Decl::ModuleOwnershipKind::ReachableWhenImported);
+  D->setLocalOwningModule(TheGlobalModuleFragment);
 }
 
 bool Sema::isStdInitializerList(QualType Ty, QualType *Element) {
