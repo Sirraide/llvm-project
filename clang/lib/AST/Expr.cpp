@@ -3616,9 +3616,12 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   case CoawaitExprClass:
   case DependentCoawaitExprClass:
   case CoyieldExprClass:
-  case CXXContractAssertExprClass:
     // These always have a side-effect.
     return true;
+
+  case ContractExprClass:
+    // This has a side-effect, iff the contract semantic is not 'ignore'.
+    return Ctx.getLangOpts().getContractSemantic() != LangOptions::ContractSemanticKind::Ignore;
 
   case StmtExprClass: {
     // StmtExprs have a side-effect if any substatement does.

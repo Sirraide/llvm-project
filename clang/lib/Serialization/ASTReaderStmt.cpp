@@ -1939,11 +1939,15 @@ void ASTStmtReader::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   E->CXXDeleteExprBits.Loc = readSourceLocation();
 }
 
-void ASTStmtReader::VisitCXXContractAssertExpr(CXXContractAssertExpr* E) {
+void ASTStmtReader::VisitContractExpr(ContractExpr* E) {
   VisitExpr(E);
-  E->AssertCondition = Record.readSubExpr();
-  E->SourceLoc = Record.readSubExpr();
-  E->Comment = Record.readSubExpr();
+  auto *Args = E->getTrailingObjects<Stmt*>();
+
+  Args[ContractExpr::CONDITION] = Record.readSubExpr();
+  Args[ContractExpr::SOURCE_LOC] = Record.readSubExpr();
+  Args[ContractExpr::COMMENT] = Record.readSubExpr();
+  if (E->isPostcondition())
+    Args[ContractExpr::RETURN_OBJECT] = Record.readSubExpr();
   E->KeywordLoc = readSourceLocation();
   E->RParenLoc = readSourceLocation();
 }
@@ -4216,12 +4220,19 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case EXPR_REQUIRES:
+    case EXPR_REQUIRES: {
       unsigned numLocalParameters = Record[ASTStmtReader::NumExprFields];
       unsigned numRequirement = Record[ASTStmtReader::NumExprFields + 1];
       S = RequiresExpr::Create(Context, Empty, numLocalParameters,
                                numRequirement);
       break;
+    }
+
+    case EXPR_CONTRACT: {
+      unsigned CK = Record[ASTStmtReader::NumExprFields];
+      S = ContractExpr::CreateDeserialized(Context, static_cast<ContractKind>(CK));
+      break;
+    }
     }
 
     // We hit a STMT_STOP, so we're done with this expression.

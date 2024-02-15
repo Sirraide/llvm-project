@@ -75,6 +75,9 @@ static const TerminalColor UndeserializedColor = {llvm::raw_ostream::GREEN,
 // CastKind from CastExpr's
 static const TerminalColor CastColor = {llvm::raw_ostream::RED, false};
 
+// ContractKind from ContractExpr's
+static const TerminalColor ContractColor = {llvm::raw_ostream::RED, false};
+
 // Value of the statement
 static const TerminalColor ValueColor = {llvm::raw_ostream::CYAN, true};
 // Decl names

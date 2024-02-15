@@ -903,8 +903,11 @@ ExprDependence clang::computeDependence(ConceptSpecializationExpr *E,
   return Res;
 }
 
-ExprDependence clang::computeDependence(CXXContractAssertExpr *E) {
-  return E->getAssertCondition()->getDependence();
+ExprDependence clang::computeDependence(ContractExpr *E) {
+  auto D = E->getCondition()->getDependence();
+  if (auto *RO = E->getReturnObject())
+    D |= RO->getDependence();
+  return D;
 }
 
 ExprDependence clang::computeDependence(ObjCArrayLiteral *E) {

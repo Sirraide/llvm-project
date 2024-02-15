@@ -19,6 +19,7 @@
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/StmtIterator.h"
 #include "clang/Basic/CapturedStmt.h"
+#include "clang/Basic/Contracts.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/Lambda.h"
@@ -1163,6 +1164,17 @@ protected:
     unsigned IsImplicit : 1;
   };
 
+  //===--- C++ Contracts bitfields classes ---===//
+  class ContractBitfields {
+    friend class ContractExpr;
+
+    LLVM_PREFERRED_TYPE(ExprBitfields)
+    unsigned : NumExprBits;
+
+    LLVM_PREFERRED_TYPE(ContractKind)
+    unsigned ContractKind : 2;
+  };
+
   //===--- Obj-C Expression bitfields classes ---===//
 
   class ObjCIndirectCopyRestoreExprBitfields {
@@ -1260,6 +1272,7 @@ protected:
     SubstNonTypeTemplateParmExprBitfields SubstNonTypeTemplateParmExprBits;
     LambdaExprBitfields LambdaExprBits;
     RequiresExprBitfields RequiresExprBits;
+    ContractBitfields ContractBits;
 
     // C++ Coroutines expressions
     CoawaitExprBitfields CoawaitBits;

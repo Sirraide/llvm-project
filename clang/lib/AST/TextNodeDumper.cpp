@@ -1594,6 +1594,27 @@ void TextNodeDumper::VisitRequiresExpr(
     OS << (Node->isSatisfied() ? " satisfied" : " unsatisfied");
 }
 
+void TextNodeDumper::VisitContractExpr(const ContractExpr *Node) {
+  OS << " <";
+  {
+    ColorScope Color(OS, ShowColors, ContractColor);
+    switch (Node->getContractKind()) {
+    case ContractKind::Postcondition:
+      OS << "Postcondition";
+      break;
+
+    case ContractKind::Precondition:
+      OS << "Precondition";
+      break;
+
+    case ContractKind::Assert:
+      OS << "Assert";
+      break;
+    }
+  }
+  OS << ">";
+}
+
 void TextNodeDumper::VisitRValueReferenceType(const ReferenceType *T) {
   if (T->isSpelledAsLValue())
     OS << " written as lvalue reference";

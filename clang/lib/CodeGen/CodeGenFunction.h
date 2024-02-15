@@ -2989,7 +2989,7 @@ public:
   void EmitCXXTemporary(const CXXTemporary *Temporary, QualType TempType,
                         Address Ptr);
 
-  void EmitCXXContractAssertExpr(const CXXContractAssertExpr *E);
+  void EmitContractExpr(const ContractExpr *E);
 
   void EmitSehCppScopeBegin();
   void EmitSehCppScopeEnd();

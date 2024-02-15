@@ -173,8 +173,8 @@ def CoyieldExpr : StmtNode<CoroutineSuspendExpr>;
 def ConceptSpecializationExpr : StmtNode<Expr>;
 def RequiresExpr : StmtNode<Expr>;
 
-// C++26 Contract expressions
-def CXXContractAssertExpr : StmtNode<Expr>;
+// C++26 Contracts
+def ContractExpr : StmtNode<Expr>;
 
 // Obj-C Expressions.
 def ObjCStringLiteral : StmtNode<Expr>;

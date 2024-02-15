@@ -316,6 +316,7 @@ public:
   void VisitOMPIteratorExpr(const OMPIteratorExpr *Node);
   void VisitConceptSpecializationExpr(const ConceptSpecializationExpr *Node);
   void VisitRequiresExpr(const RequiresExpr *Node);
+  void VisitContractExpr(const ContractExpr* Node);
 
   void VisitRValueReferenceType(const ReferenceType *T);
   void VisitArrayType(const ArrayType *T);

@@ -2320,10 +2320,30 @@ void StmtPrinter::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   PrintExpr(E->getArgument());
 }
 
-void StmtPrinter::VisitCXXContractAssertExpr(CXXContractAssertExpr* E) {
-  OS << "contract_assert(";
-  PrintExpr(E->getAssertCondition());
-  OS << ")";
+void StmtPrinter::VisitContractExpr(ContractExpr* E) {
+  switch (E->getContractKind()) {
+    case ContractKind::Assert:
+      OS << "contract_assert(";
+      PrintExpr(E->getCondition());
+      OS << ")";
+      break;
+
+    case ContractKind::Precondition:
+      OS << "pre(";
+      PrintExpr(E->getCondition());
+      OS << ")";
+      break;
+
+    case ContractKind::Postcondition:
+      OS << "post(";
+      if (auto *RO = E->getReturnObject()) {
+        PrintExpr(RO);
+        OS << " : ";
+      }
+      PrintExpr(E->getCondition());
+      OS << ")";
+      break;
+  }
 }
 
 void StmtPrinter::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {

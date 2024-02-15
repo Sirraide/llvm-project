@@ -2091,11 +2091,13 @@ void StmtProfiler::VisitCXXDeleteExpr(const CXXDeleteExpr *S) {
   VisitDecl(S->getOperatorDelete());
 }
 
-void StmtProfiler::VisitCXXContractAssertExpr(const CXXContractAssertExpr* S) {
+void StmtProfiler::VisitContractExpr(const ContractExpr* S) {
   VisitExpr(S);
-  VisitExpr(S->getAssertCondition());
+  VisitExpr(S->getCondition());
   VisitExpr(S->getSourceLoc());
   VisitExpr(S->getComment());
+  if (auto *RO = S->getReturnObject())
+    VisitExpr(RO);
 }
 
 void StmtProfiler::VisitCXXNewExpr(const CXXNewExpr *S) {

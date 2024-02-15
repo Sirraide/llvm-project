@@ -492,12 +492,10 @@ public:
   friend class CastExpr;
   friend TrailingObjects;
 
-  static CXXDynamicCastExpr *Create(const ASTContext &Context, QualType T,
-                                    ExprValueKind VK, CastKind Kind, Expr *Op,
-                                    const CXXCastPath *Path,
-                                    TypeSourceInfo *Written, SourceLocation L,
-                                    SourceLocation RParenLoc,
-                                    SourceRange AngleBrackets);
+  static CXXDynamicCastExpr *
+  Create(const ASTContext &Context, QualType T, ExprValueKind VK, CastKind Kind,
+         Expr *Op, const CXXCastPath *Path, TypeSourceInfo *Written,
+         SourceLocation L, SourceLocation RParenLoc, SourceRange AngleBrackets);
 
   static CXXDynamicCastExpr *CreateEmpty(const ASTContext &Context,
                                          unsigned pathSize);
@@ -537,12 +535,10 @@ public:
   friend class CastExpr;
   friend TrailingObjects;
 
-  static CXXReinterpretCastExpr *Create(const ASTContext &Context, QualType T,
-                                        ExprValueKind VK, CastKind Kind,
-                                        Expr *Op, const CXXCastPath *Path,
-                                 TypeSourceInfo *WrittenTy, SourceLocation L,
-                                        SourceLocation RParenLoc,
-                                        SourceRange AngleBrackets);
+  static CXXReinterpretCastExpr *
+  Create(const ASTContext &Context, QualType T, ExprValueKind VK, CastKind Kind,
+         Expr *Op, const CXXCastPath *Path, TypeSourceInfo *WrittenTy,
+         SourceLocation L, SourceLocation RParenLoc, SourceRange AngleBrackets);
   static CXXReinterpretCastExpr *CreateEmpty(const ASTContext &Context,
                                              unsigned pathSize);
 
@@ -691,7 +687,7 @@ public:
   /// removed).
   Expr *getCookedLiteral();
   const Expr *getCookedLiteral() const {
-    return const_cast<UserDefinedLiteral*>(this)->getCookedLiteral();
+    return const_cast<UserDefinedLiteral *>(this)->getCookedLiteral();
   }
 
   SourceLocation getBeginLoc() const {
@@ -810,8 +806,8 @@ public:
     setDependence(computeDependence(this));
   }
 
-  Expr *getSubExpr() { return static_cast<Expr*>(SubExpr); }
-  const Expr *getSubExpr() const { return static_cast<const Expr*>(SubExpr); }
+  Expr *getSubExpr() { return static_cast<Expr *>(SubExpr); }
+  const Expr *getSubExpr() const { return static_cast<const Expr *>(SubExpr); }
 
   SourceLocation getBeginLoc() const LLVM_READONLY {
     return SubExpr->getBeginLoc();
@@ -865,9 +861,9 @@ public:
   CXXTypeidExpr(EmptyShell Empty, bool isExpr)
       : Expr(CXXTypeidExprClass, Empty) {
     if (isExpr)
-      Operand = (Expr*)nullptr;
+      Operand = (Expr *)nullptr;
     else
-      Operand = (TypeSourceInfo*)nullptr;
+      Operand = (TypeSourceInfo *)nullptr;
   }
 
   /// Determine whether this typeid has a type operand which is potentially
@@ -891,7 +887,7 @@ public:
   }
   Expr *getExprOperand() const {
     assert(!isTypeOperand() && "Cannot call getExprOperand for typeid(type)");
-    return static_cast<Expr*>(Operand.get<Stmt *>());
+    return static_cast<Expr *>(Operand.get<Stmt *>());
   }
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return Range.getBegin(); }
@@ -961,13 +957,13 @@ public:
     else if (QualifierLoc)
       return QualifierLoc.getBeginLoc();
     else
-        return MemberLoc;
+      return MemberLoc;
   }
 
   SourceLocation getEndLoc() const { return getMemberLoc(); }
 
   child_range children() {
-    return child_range((Stmt**)&BaseExpr, (Stmt**)&BaseExpr + 1);
+    return child_range((Stmt **)&BaseExpr, (Stmt **)&BaseExpr + 1);
   }
 
   const_child_range children() const {
@@ -1082,11 +1078,11 @@ public:
   }
 
   CXXUuidofExpr(EmptyShell Empty, bool isExpr)
-    : Expr(CXXUuidofExprClass, Empty) {
+      : Expr(CXXUuidofExprClass, Empty) {
     if (isExpr)
-      Operand = (Expr*)nullptr;
+      Operand = (Expr *)nullptr;
     else
-      Operand = (TypeSourceInfo*)nullptr;
+      Operand = (TypeSourceInfo *)nullptr;
   }
 
   bool isTypeOperand() const { return Operand.is<TypeSourceInfo *>(); }
@@ -1102,7 +1098,7 @@ public:
   }
   Expr *getExprOperand() const {
     assert(!isTypeOperand() && "Cannot call getExprOperand for __uuidof(type)");
-    return static_cast<Expr*>(Operand.get<Stmt *>());
+    return static_cast<Expr *>(Operand.get<Stmt *>());
   }
 
   MSGuidDecl *getGuidDecl() const { return Guid; }
@@ -1453,9 +1449,7 @@ public:
 
   const CXXDestructorDecl *getDestructor() const { return Destructor; }
 
-  void setDestructor(const CXXDestructorDecl *Dtor) {
-    Destructor = Dtor;
-  }
+  void setDestructor(const CXXDestructorDecl *Dtor) { Destructor = Dtor; }
 };
 
 /// Represents binding an expression to a temporary.
@@ -1488,7 +1482,7 @@ public:
       : Expr(CXXBindTemporaryExprClass, Empty) {}
 
   static CXXBindTemporaryExpr *Create(const ASTContext &C, CXXTemporary *Temp,
-                                      Expr* SubExpr);
+                                      Expr *SubExpr);
 
   CXXTemporary *getTemporary() { return Temp; }
   const CXXTemporary *getTemporary() const { return Temp; }
@@ -2181,9 +2175,7 @@ public:
   explicit CXXScalarValueInitExpr(EmptyShell Shell)
       : Expr(CXXScalarValueInitExprClass, Shell) {}
 
-  TypeSourceInfo *getTypeSourceInfo() const {
-    return TypeInfo;
-  }
+  TypeSourceInfo *getTypeSourceInfo() const { return TypeInfo; }
 
   SourceLocation getRParenLoc() const {
     return CXXScalarValueInitExprBits.RParenLoc;
@@ -2630,12 +2622,11 @@ class CXXPseudoDestructorExpr : public Expr {
   PseudoDestructorTypeStorage DestroyedType;
 
 public:
-  CXXPseudoDestructorExpr(const ASTContext &Context,
-                          Expr *Base, bool isArrow, SourceLocation OperatorLoc,
+  CXXPseudoDestructorExpr(const ASTContext &Context, Expr *Base, bool isArrow,
+                          SourceLocation OperatorLoc,
                           NestedNameSpecifierLoc QualifierLoc,
                           TypeSourceInfo *ScopeType,
-                          SourceLocation ColonColonLoc,
-                          SourceLocation TildeLoc,
+                          SourceLocation ColonColonLoc, SourceLocation TildeLoc,
                           PseudoDestructorTypeStorage DestroyedType);
 
   explicit CXXPseudoDestructorExpr(EmptyShell Shell)
@@ -2738,46 +2729,113 @@ public:
   }
 };
 
-/// A C++26 contract assertion.
-class CXXContractAssertExpr final : public Expr {
-  /// The contract condition.
-  Stmt *AssertCondition;
-  Stmt *SourceLoc;
-  Stmt *Comment;
+/// Represents a C++26 contract.
+class ContractExpr final : public Expr,
+                           private llvm::TrailingObjects<ContractExpr, Stmt *> {
+  enum {
+    /// The contract condition.
+    CONDITION,
 
-  /// The location of the 'contract_assert' keyword.
+    /// A SourceLocExpr that is emitted for the 'source_location'
+    /// member of the 'contract_violation' created if evaluation
+    /// of the condition yields 'false'.
+    SOURCE_LOC,
+
+    /// A StringLiteral that is emitted for the 'comment' member of
+    /// the 'contract_violation'.
+    COMMENT,
+
+    /// A DeclRefExpr that is bound to the return value, if this is
+    /// a postcondition. The declaration itself is stored in the
+    /// function declaration.
+    RETURN_OBJECT,
+  };
+
+  /// The location of the 'contract_assert', 'pre', or 'post' keyword.
   SourceLocation KeywordLoc;
 
   /// The location of the closing parenthesis.
   SourceLocation RParenLoc;
 
-  CXXContractAssertExpr(EmptyShell Empty) : Expr(CXXContractAssertExprClass, Empty) {}
+  ContractExpr(EmptyShell Empty, ContractKind CK)
+      : Expr(ContractExprClass, Empty) {
+    ContractBits.ContractKind = static_cast<unsigned>(CK);
+  }
+
+  ContractExpr(const ASTContext &C, ContractKind CK, Expr *Condition,
+               SourceLocExpr *SourceLoc, StringLiteral *Comment,
+               DeclRefExpr *ReturnObject, SourceLocation KeywordLoc,
+               SourceLocation RParenLoc);
+
+  size_t numTrailingObjects(OverloadToken<TypeSourceInfo *>) const {
+    return subExprs();
+  }
+
+  size_t subExprs() const { return 3 + isPostcondition(); }
 
 public:
   friend class ASTStmtReader;
   friend class ASTStmtWriter;
+  friend TrailingObjects;
 
-  CXXContractAssertExpr(const ASTContext &C, SourceLocation KeywordLoc,
-                        Expr *AssertCondition, SourceLocExpr* SourceLoc,
-                        StringLiteral *Comment, SourceLocation RParenLoc);
+  static ContractExpr *Create(const ASTContext &C, ContractKind CK,
+                              Expr *Condition, SourceLocExpr *SourceLoc,
+                              StringLiteral *Comment, DeclRefExpr *ReturnObject,
+                              SourceLocation KeywordLoc,
+                              SourceLocation RParenLoc);
+
+  static ContractExpr *CreateDeserialized(const ASTContext &C, ContractKind CK);
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return KeywordLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 
-  Expr *getAssertCondition() const { return cast<Expr>(AssertCondition); }
-  SourceLocExpr *getSourceLoc() const { return cast<SourceLocExpr>(SourceLoc); }
-  StringLiteral *getComment() const { return cast<StringLiteral>(Comment); }
+  ContractKind getContractKind() const LLVM_READONLY {
+    return static_cast<ContractKind>(ContractBits.ContractKind);
+  }
+
+  Expr *getCondition() const {
+    return cast<Expr>(getTrailingObjects<Stmt *>()[CONDITION]);
+  }
+
+  SourceLocExpr *getSourceLoc() const {
+    return cast<SourceLocExpr>(getTrailingObjects<Stmt *>()[SOURCE_LOC]);
+  }
+
+  StringLiteral *getComment() const {
+    return cast<StringLiteral>(getTrailingObjects<Stmt *>()[COMMENT]);
+  }
+
+  DeclRefExpr *getReturnObject() const {
+    return isPostcondition()
+               ? cast<DeclRefExpr>(getTrailingObjects<Stmt *>()[RETURN_OBJECT])
+               : nullptr;
+  }
+
+  bool isContractAssert() const LLVM_READONLY {
+    return getContractKind() == ContractKind::Assert;
+  }
+
+  bool isPrecondition() const LLVM_READONLY {
+    return getContractKind() == ContractKind::Precondition;
+  }
+
+  bool isPostcondition() const LLVM_READONLY {
+    return getContractKind() == ContractKind::Postcondition;
+  }
 
   static bool classof(const Stmt *T) {
-    return T->getStmtClass() == CXXContractAssertExprClass;
+    return T->getStmtClass() == ContractExprClass;
   }
+
   // Iterators
   child_range children() {
-    return {&AssertCondition, &Comment + 1};
+    auto begin = getTrailingObjects<Stmt *>();
+    return child_range(begin, begin + subExprs());
   }
 
   const_child_range children() const {
-    return const_child_range(&AssertCondition, &Comment + 1);
+    auto begin = getTrailingObjects<Stmt *>();
+    return const_child_range(begin, begin + subExprs());
   }
 };
 
@@ -2802,8 +2860,7 @@ class TypeTraitExpr final
   // TypeTraitExpr.
 
   TypeTraitExpr(QualType T, SourceLocation Loc, TypeTrait Kind,
-                ArrayRef<TypeSourceInfo *> Args,
-                SourceLocation RParenLoc,
+                ArrayRef<TypeSourceInfo *> Args, SourceLocation RParenLoc,
                 bool Value);
 
   TypeTraitExpr(EmptyShell Empty) : Expr(TypeTraitExprClass, Empty) {}
@@ -2821,8 +2878,7 @@ public:
   static TypeTraitExpr *Create(const ASTContext &C, QualType T,
                                SourceLocation Loc, TypeTrait Kind,
                                ArrayRef<TypeSourceInfo *> Args,
-                               SourceLocation RParenLoc,
-                               bool Value);
+                               SourceLocation RParenLoc, bool Value);
 
   static TypeTraitExpr *CreateDeserialized(const ASTContext &C,
                                            unsigned NumArgs);
@@ -2922,7 +2978,10 @@ public:
 
   TypeSourceInfo *getQueriedTypeSourceInfo() const { return QueriedType; }
 
-  uint64_t getValue() const { assert(!isTypeDependent()); return Value; }
+  uint64_t getValue() const {
+    assert(!isTypeDependent());
+    return Value;
+  }
 
   Expr *getDimensionExpression() const { return Dimension; }
 
@@ -2963,7 +3022,7 @@ class ExpressionTraitExpr : public Expr {
   SourceLocation RParen;
 
   /// The expression being queried.
-  Expr* QueriedExpression = nullptr;
+  Expr *QueriedExpression = nullptr;
 
 public:
   friend class ASTStmtReader;
@@ -3626,7 +3685,7 @@ public:
   arg_iterator arg_end() { return arg_begin() + getNumArgs(); }
   arg_range arguments() { return arg_range(arg_begin(), arg_end()); }
 
-  using const_arg_iterator = const Expr* const *;
+  using const_arg_iterator = const Expr *const *;
   using const_arg_range = llvm::iterator_range<const_arg_iterator>;
 
   const_arg_iterator arg_begin() const { return getTrailingObjects<Expr *>(); }
@@ -4240,9 +4299,7 @@ public:
   }
 
   // Iterators
-  child_range children() {
-    return child_range(&Pattern, &Pattern + 1);
-  }
+  child_range children() { return child_range(&Pattern, &Pattern + 1); }
 
   const_child_range children() const {
     return const_child_range(&Pattern, &Pattern + 1);
@@ -4346,9 +4403,7 @@ public:
   ///
   ///   template<typename ...Ts> using X = int[sizeof...(Ts)];
   ///   template<typename ...Us> void f(X<Us..., 1, 2, 3, Us...>);
-  bool isPartiallySubstituted() const {
-    return isValueDependent() && Length;
-  }
+  bool isPartiallySubstituted() const { return isValueDependent() && Length; }
 
   /// Get
   ArrayRef<TemplateArgument> getPartialArguments() const {
@@ -4653,9 +4708,8 @@ class FunctionParmPackExpr final
   /// The number of expansions of this pack.
   unsigned NumParameters;
 
-  FunctionParmPackExpr(QualType T, VarDecl *ParamPack,
-                       SourceLocation NameLoc, unsigned NumParams,
-                       VarDecl *const *Params);
+  FunctionParmPackExpr(QualType T, VarDecl *ParamPack, SourceLocation NameLoc,
+                       unsigned NumParams, VarDecl *const *Params);
 
 public:
   static FunctionParmPackExpr *Create(const ASTContext &Context, QualType T,
@@ -4673,7 +4727,7 @@ public:
 
   /// Iterators over the parameters which the parameter pack expanded
   /// into.
-  using iterator = VarDecl * const *;
+  using iterator = VarDecl *const *;
   iterator begin() const { return getTrailingObjects<VarDecl *>(); }
   iterator end() const { return begin() + NumParameters; }
 
@@ -4865,8 +4919,8 @@ public:
   UnresolvedLookupExpr *getCallee() const {
     return static_cast<UnresolvedLookupExpr *>(SubExprs[SubExpr::Callee]);
   }
-  Expr *getLHS() const { return static_cast<Expr*>(SubExprs[SubExpr::LHS]); }
-  Expr *getRHS() const { return static_cast<Expr*>(SubExprs[SubExpr::RHS]); }
+  Expr *getLHS() const { return static_cast<Expr *>(SubExprs[SubExpr::LHS]); }
+  Expr *getRHS() const { return static_cast<Expr *>(SubExprs[SubExpr::RHS]); }
 
   /// Does this produce a right-associated sequence of operators?
   bool isRightFold() const {
@@ -5117,22 +5171,22 @@ public:
   }
 
   Expr *getCommonExpr() const {
-    return static_cast<Expr*>(SubExprs[SubExpr::Common]);
+    return static_cast<Expr *>(SubExprs[SubExpr::Common]);
   }
 
   /// getOpaqueValue - Return the opaque value placeholder.
   OpaqueValueExpr *getOpaqueValue() const { return OpaqueValue; }
 
   Expr *getReadyExpr() const {
-    return static_cast<Expr*>(SubExprs[SubExpr::Ready]);
+    return static_cast<Expr *>(SubExprs[SubExpr::Ready]);
   }
 
   Expr *getSuspendExpr() const {
-    return static_cast<Expr*>(SubExprs[SubExpr::Suspend]);
+    return static_cast<Expr *>(SubExprs[SubExpr::Suspend]);
   }
 
   Expr *getResumeExpr() const {
-    return static_cast<Expr*>(SubExprs[SubExpr::Resume]);
+    return static_cast<Expr *>(SubExprs[SubExpr::Resume]);
   }
 
   // The syntactic operand written in the code

@@ -16070,7 +16070,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
     return ICEDiag(IK_NotICE, E->getBeginLoc());
   }
 
-  case Expr::CXXContractAssertExprClass:
+  case Expr::ContractExprClass:
     return ICEDiag(IK_NotICE, E->getBeginLoc());
 
   case Expr::SizeOfPackExprClass:

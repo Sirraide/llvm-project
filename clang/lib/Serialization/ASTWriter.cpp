@@ -797,6 +797,7 @@ static void AddStmtsExprs(llvm::BitstreamWriter &Stream,
   RECORD(EXPR_CXX_UUIDOF_EXPR);
   RECORD(EXPR_CXX_UUIDOF_TYPE);
   RECORD(EXPR_LAMBDA);
+  RECORD(EXPR_CONTRACT);
 #undef RECORD
 }
 

@@ -2018,6 +2018,8 @@ enum StmtCode {
 
   // SYCLUniqueStableNameExpr
   EXPR_SYCL_UNIQUE_STABLE_NAME,
+
+  EXPR_CONTRACT, // ContractExpr
 };
 
 /// The kinds of designators that can occur in a

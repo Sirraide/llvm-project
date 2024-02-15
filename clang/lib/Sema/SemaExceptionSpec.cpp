@@ -1240,11 +1240,14 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
     return mergeCanThrow(CT, canSubStmtsThrow(*this, DE));
   }
 
-  case Expr::CXXContractAssertExprClass: {
+  case Expr::ContractExprClass: {
     // FIXME: Should also check if the contract violation handler can throw
-    //        if the semantic is not set to ignored.
-    auto *CAE = cast<CXXContractAssertExpr>(S);
-    return canThrow(CAE->getAssertCondition());
+    //        (only if the semantic is not set to 'ignore'?).
+    // TODO: Should we return 'false' here if the contract semantic is set
+    //       to 'ignore'? Probably not, but the proposal doesn't seem to say
+    //       anything about this.
+    auto *CAE = cast<ContractExpr>(S);
+    return canThrow(CAE->getCondition());
   }
 
   case Expr::CXXBindTemporaryExprClass: {

@@ -2375,22 +2375,24 @@ llvm::Value *CodeGenFunction::EmitDynamicCast(Address ThisAddr,
   return Value;
 }
 
-void CodeGenFunction::EmitCXXContractAssertExpr(
-    const CXXContractAssertExpr *E) {
+void CodeGenFunction::EmitContractExpr(
+    const ContractExpr *E) {
   auto Semantic = getLangOpts().getContractSemantic();
   if (Semantic == LangOptions::ContractSemanticKind::Ignore)
     return;
 
+  assert(E->getContractKind() == ContractKind::Assert && "TODO: emit preconditions and postconditions");
   llvm::BasicBlock *ContractViolated = createBasicBlock("contract.violation");
   llvm::BasicBlock *ContractEnd = createBasicBlock("contract.end");
 
   // FIXME: May throw.
-  EmitBranchOnBoolExpr(E->getAssertCondition(), ContractEnd, ContractViolated,
+  EmitBranchOnBoolExpr(E->getCondition(), ContractEnd, ContractViolated,
                        /*TrueCount=*/0, Stmt::LH_Unlikely);
 
   EmitBlock(ContractViolated);
 
   // Args.
+  // FIXME: Should be a compile-time constant.
   auto Bits = getContext().getTypeSize(getContext().IntTy);
   llvm::Value *SLoc = EmitScalarExpr(E->getSourceLoc());
   llvm::Value *Comment =
@@ -2399,7 +2401,7 @@ void CodeGenFunction::EmitCXXContractAssertExpr(
       Builder.getIntN(Bits, /*predicate_false*/ 0); // FIXME: magic
   llvm::Value *ContractSemantic = Builder.getIntN(Bits, int(Semantic));
   llvm::Value *ContractKind =
-      Builder.getIntN(Bits, /*assert*/ 2); // FIXME: magic
+      Builder.getIntN(Bits, unsigned(E->getContractKind()));
 
   llvm::Value *Args[]{SLoc, Comment, DetectionMode, ContractSemantic,
                       ContractKind};

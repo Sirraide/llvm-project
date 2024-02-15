@@ -7010,13 +7010,14 @@ public:
   void DeclareGlobalContractViolationHandler();
   void DeclareStdContractsContractViolation();
 
-  /// ActOnCXXContractAssertExpr - Parsed a C++ 'contract_assert' expression
-  ExprResult ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
-                                        Expr *AssertExpr, SourceLocation RParen);
-  ExprResult BuildCXXContractAssertExpr(SourceLocation KeyLoc, Expr *AssertExpr,
-                                        SourceLocExpr *SourceLoc,
-                                        StringLiteral *Comment,
-                                        SourceLocation RParen);
+  /// ActOnContractAssertExpr - Parsed a C++ 'contract_assert' expression
+  ExprResult ActOnContractAssertExpr(Expr *Assertion, SourceLocation KeyLoc,
+                                     SourceLocation RParen);
+
+  ExprResult BuildContractExpr(ContractKind CK, Expr *Assertion,
+                               SourceLocExpr *SourceLoc, StringLiteral *Comment,
+                               DeclRefExpr *ReturnObject, SourceLocation KeyLoc,
+                               SourceLocation RParen);
 
   ExprResult ActOnNoexceptExpr(SourceLocation KeyLoc, SourceLocation LParen,
                                Expr *Operand, SourceLocation RParen);

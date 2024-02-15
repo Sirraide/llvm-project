@@ -1807,8 +1807,8 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
     Res = ParseConditionalExpression();
     T.consumeClose();
     if (!Res.isInvalid())
-      Res = Actions.ActOnCXXContractAssertExpr(KeyLoc, Res.get(),
-                                               T.getCloseLocation());
+      Res = Actions.ActOnContractAssertExpr(Res.get(), KeyLoc,
+                                            T.getCloseLocation());
 
     AllowSuffix = false;
     break;

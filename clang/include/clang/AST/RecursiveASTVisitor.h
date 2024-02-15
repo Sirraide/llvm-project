@@ -2747,9 +2747,12 @@ DEF_TRAVERSE_STMT(CXXInheritedCtorInitExpr, {})
 DEF_TRAVERSE_STMT(CXXNullPtrLiteralExpr, {})
 DEF_TRAVERSE_STMT(CXXStdInitializerListExpr, {})
 
-DEF_TRAVERSE_STMT(CXXContractAssertExpr, {
-  TRY_TO(TraverseStmt(S->getAssertCondition()));
+DEF_TRAVERSE_STMT(ContractExpr, {
+  TRY_TO(TraverseStmt(S->getCondition()));
   TRY_TO(TraverseStmt(S->getSourceLoc()));
+  TRY_TO(TraverseStmt(S->getComment()));
+  if (auto *RO = S->getReturnObject())
+    TRY_TO(TraverseStmt(RO));
 })
 
 DEF_TRAVERSE_STMT(CXXPseudoDestructorExpr, {

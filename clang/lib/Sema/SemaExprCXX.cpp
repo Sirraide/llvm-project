@@ -8211,12 +8211,13 @@ ExprResult Sema::ActOnPseudoDestructorExpr(Scope *S, Expr *Base,
                                    Destructed);
 }
 
-ExprResult Sema::BuildCXXContractAssertExpr(SourceLocation KeyLoc,
-                                            Expr *AssertCondition,
-                                            SourceLocExpr* SourceLoc,
-                                            StringLiteral* Comment,
-                                            SourceLocation RParen) {
-  ExprResult R = CheckPlaceholderExpr(AssertCondition);
+ExprResult Sema::BuildContractExpr(ContractKind CK, Expr *Condition,
+                                   SourceLocExpr *SourceLoc,
+                                   StringLiteral *Comment,
+                                   DeclRefExpr *ReturnObject,
+                                   SourceLocation KeyLoc,
+                                   SourceLocation RParen) {
+  ExprResult R = CheckPlaceholderExpr(Condition);
   if (R.isInvalid())
     return ExprError();
 
@@ -8226,13 +8227,12 @@ ExprResult Sema::BuildCXXContractAssertExpr(SourceLocation KeyLoc,
       return ExprError();
   }
 
-  return new (Context) CXXContractAssertExpr(Context, KeyLoc, R.get(),
-                                             SourceLoc, Comment, RParen);
+  return ContractExpr::Create(Context, CK, R.get(), SourceLoc, Comment,
+                              ReturnObject, KeyLoc, RParen);
 }
 
-ExprResult Sema::ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
-                                            Expr *AssertCondition,
-                                            SourceLocation RParen) {
+ExprResult Sema::ActOnContractAssertExpr(Expr *Assertion, SourceLocation KeyLoc,
+                                         SourceLocation RParen) {
   // This is a bit of a hack, but it works.
   // TODO: Implicitly declare std::source_location if need be.
   ExprResult SLoc =
@@ -8241,12 +8241,13 @@ ExprResult Sema::ActOnCXXContractAssertExpr(SourceLocation KeyLoc,
     return ExprError();
 
   StringRef Comment = Lexer::getSourceText(
-      CharSourceRange::getTokenRange(AssertCondition->getSourceRange()),
-      SourceMgr, Context.getLangOpts());
+      CharSourceRange::getTokenRange(Assertion->getSourceRange()), SourceMgr,
+      Context.getLangOpts());
   StringLiteral *SL = Context.getPredefinedStringLiteralFromCache(Comment);
 
-  return BuildCXXContractAssertExpr(
-      KeyLoc, AssertCondition, cast<SourceLocExpr>(SLoc.get()), SL, RParen);
+  return BuildContractExpr(ContractKind::Assert, Assertion,
+                           cast<SourceLocExpr>(SLoc.get()), SL, nullptr, KeyLoc,
+                           RParen);
 }
 
 ExprResult Sema::BuildCXXNoexceptExpr(SourceLocation KeyLoc, Expr *Operand,

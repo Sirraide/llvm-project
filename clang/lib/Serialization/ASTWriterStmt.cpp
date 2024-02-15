@@ -1932,13 +1932,19 @@ void ASTStmtWriter::VisitCXXDeleteExpr(CXXDeleteExpr *E) {
   Code = serialization::EXPR_CXX_DELETE;
 }
 
-void ASTStmtWriter::VisitCXXContractAssertExpr(CXXContractAssertExpr *E) {
+void ASTStmtWriter::VisitContractExpr(ContractExpr *E) {
   VisitExpr(E);
-  Record.AddStmt(E->getAssertCondition());
+  Record.push_back(unsigned(E->getContractKind()));
+
+  Record.AddStmt(E->getCondition());
   Record.AddStmt(E->getSourceLoc());
   Record.AddStmt(E->getComment());
+  if (auto *RO = E->getReturnObject())
+    Record.AddStmt(RO);
   Record.AddSourceLocation(E->KeywordLoc);
   Record.AddSourceLocation(E->RParenLoc);
+
+  Code = serialization::EXPR_CONTRACT;
 }
 
 void ASTStmtWriter::VisitCXXPseudoDestructorExpr(CXXPseudoDestructorExpr *E) {

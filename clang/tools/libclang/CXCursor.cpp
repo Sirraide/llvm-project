@@ -329,7 +329,7 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::SourceLocExprClass:
   case Stmt::ConvertVectorExprClass:
   case Stmt::VAArgExprClass:
-  case Stmt::CXXContractAssertExprClass:
+  case Stmt::ContractExprClass:
   case Stmt::ObjCArrayLiteralClass:
   case Stmt::ObjCDictionaryLiteralClass:
   case Stmt::ObjCBoxedExprClass:

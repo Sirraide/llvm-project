@@ -695,8 +695,8 @@ public:
     return llvm::ConstantInt::get(Builder.getInt1Ty(), E->getValue());
   }
 
-  Value *VisitCXXContractAssertExpr(const CXXContractAssertExpr* E) {
-    CGF.EmitCXXContractAssertExpr(E);
+  Value *VisitContractExpr(const ContractExpr* E) {
+    CGF.EmitContractExpr(E);
     return nullptr;
   }
 

@@ -315,13 +315,40 @@ QualType CXXDeleteExpr::getDestroyedType() const {
   return ArgType->castAs<PointerType>()->getPointeeType();
 }
 
-CXXContractAssertExpr::CXXContractAssertExpr(
-    const ASTContext &Context, SourceLocation KeywordLoc, Expr *AssertCondition,
-    SourceLocExpr *SourceLoc, StringLiteral *Comment, SourceLocation RParenLoc)
-    : Expr(CXXContractAssertExprClass, Context.VoidTy, VK_PRValue, OK_Ordinary),
-      AssertCondition(AssertCondition), SourceLoc(SourceLoc), Comment(Comment),
+ContractExpr::ContractExpr(const ASTContext &C, ContractKind CK,
+                           Expr *Condition, SourceLocExpr *SourceLoc,
+                           StringLiteral *Comment, DeclRefExpr *ReturnObject,
+                           SourceLocation KeywordLoc, SourceLocation RParenLoc)
+    : Expr(ContractExprClass, C.VoidTy, VK_PRValue, OK_Ordinary),
       KeywordLoc(KeywordLoc), RParenLoc(RParenLoc) {
+  ContractBits.ContractKind = static_cast<unsigned>(CK);
+  auto *Args = getTrailingObjects<Stmt *>();
+  Args[CONDITION] = Condition;
+  Args[SOURCE_LOC] = SourceLoc;
+  Args[COMMENT] = Comment;
+  if (ReturnObject)
+    Args[RETURN_OBJECT] = ReturnObject;
   setDependence(computeDependence(this));
+}
+
+ContractExpr *ContractExpr::Create(const ASTContext &C, ContractKind CK,
+                                   Expr *Condition, SourceLocExpr *SourceLoc,
+                                   StringLiteral *Comment,
+                                   DeclRefExpr *ReturnObject,
+                                   SourceLocation KeywordLoc,
+                                   SourceLocation RParenLoc) {
+  unsigned Size = totalSizeToAlloc<Stmt *>(ReturnObject ? 4 : 3);
+  void *Mem = C.Allocate(Size, alignof(ContractExpr));
+  return new (Mem) ContractExpr(C, CK, Condition, SourceLoc, Comment,
+                                ReturnObject, KeywordLoc, RParenLoc);
+}
+
+ContractExpr *ContractExpr::CreateDeserialized(const ASTContext &C,
+                                               ContractKind CK) {
+  unsigned Size =
+      totalSizeToAlloc<Stmt *>(CK == ContractKind::Postcondition ? 4 : 3);
+  void *Mem = C.Allocate(Size, alignof(ContractExpr));
+  return new (Mem) ContractExpr(EmptyShell(), CK);
 }
 
 // CXXPseudoDestructorExpr

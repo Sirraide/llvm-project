@@ -3386,17 +3386,18 @@ public:
                                     Operand);
   }
 
-  /// Build a new C++ "contract_assert" expression.
+  /// Build a new C++ contract.
   ///
   /// By default, performs semantic analysis to build the new expression.
-  /// Subclasses may override this routine to provide different behavior.1
-  ExprResult RebuildCXXContractAssertExpr(SourceLocation KeywordLoc,
-                                          Expr *AssertCondition,
-                                          SourceLocExpr *SourceLoc,
-                                          StringLiteral *Comment,
-                                          SourceLocation RParenLoc) {
-    return getSema().BuildCXXContractAssertExpr(KeywordLoc, AssertCondition,
-                                                SourceLoc, Comment, RParenLoc);
+  /// Subclasses may override this routine to provide different behavior.
+  ExprResult RebuildContractExpr(ContractKind CK, Expr *AssertCondition,
+                                 SourceLocExpr *SourceLoc,
+                                 StringLiteral *Comment,
+                                 DeclRefExpr *ReturnObject,
+                                 SourceLocation KeywordLoc,
+                                 SourceLocation RParenLoc) {
+    return getSema().BuildContractExpr(CK, AssertCondition, SourceLoc, Comment,
+                                       ReturnObject, KeywordLoc, RParenLoc);
   }
 
   /// Build a new type trait expression.
@@ -12781,14 +12782,22 @@ TreeTransform<Derived>::TransformCXXDeleteExpr(CXXDeleteExpr *E) {
 }
 
 template <typename Derived>
-ExprResult TreeTransform<Derived>::TransformCXXContractAssertExpr(
-    CXXContractAssertExpr *E) {
-  ExprResult R = getDerived().TransformExpr(E->getAssertCondition());
-  if (R.isInvalid())
+ExprResult TreeTransform<Derived>::TransformContractExpr(ContractExpr *E) {
+  ExprResult Cond = getDerived().TransformExpr(E->getCondition());
+  if (Cond.isInvalid())
     return ExprError();
 
-  return getDerived().RebuildCXXContractAssertExpr(
-      E->getBeginLoc(), R.get(), E->getSourceLoc(), E->getComment(),
+  DeclRefExpr *RO = E->getReturnObject();
+  if (RO) {
+    ExprResult R = getDerived().TransformExpr(RO);
+    if (R.isInvalid())
+      return ExprError();
+    RO = cast<DeclRefExpr>(R.get());
+  }
+
+  return getDerived().RebuildContractExpr(
+      E->getContractKind(),
+      Cond.get(), E->getSourceLoc(), E->getComment(), RO, E->getBeginLoc(),
       E->getEndLoc());
 }
 
