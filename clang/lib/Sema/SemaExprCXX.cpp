@@ -8229,8 +8229,28 @@ ExprResult Sema::BuildContractExpr(ContractKind CK, Expr *Condition,
 
 ExprResult Sema::ActOnContractAssertExpr(Expr *Assertion, SourceLocation KeyLoc,
                                          SourceLocation RParen) {
-  // This is a bit of a hack, but it works.
-  // TODO: Implicitly declare std::source_location if need be.
+  // FIXME: This only works for libc++ and libstdc++'s 'source_location' type,
+  // both of which use '__builtin_source_location()'. The problem here is that
+  // using contracts does not require including '<source_location>'.
+  //
+  // Since we don't know how 'std::source_location::current()' is implemented,
+  // and because it also has to be called at compile time, this means we have
+  // no way of creating a 'std::source_location' without including the header.
+  //
+  // So, in the long run, this means that we either have to
+  //
+  // 1. Implicitly include '<source_location>' and complain if it doesn't exist;
+  //    then, call, 'std::source_location::current()'.
+  //
+  // 2. Hard-code a few common platforms that we're sure won't change (libc++,
+  //    libstdc++, and potentially MSVC's STL), and complain and tell the user
+  //    to include '<source_location>' if they're using a different STL.
+  //
+  // 3. Not support contracts if no definition of 'std::source_location' is
+  //    available. This may or may not be acceptable, depending on what the
+  //    standard's opinion on this matter ends up being, if any.
+  //
+  // For now, we're going with option 3 for the sake of simplicity.
   ExprResult SLoc =
       ActOnSourceLocExpr(SourceLocIdentKind::SourceLocStruct, KeyLoc, KeyLoc);
   if (SLoc.isInvalid())
