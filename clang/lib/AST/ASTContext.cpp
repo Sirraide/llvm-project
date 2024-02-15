@@ -9178,6 +9178,36 @@ TypedefDecl *ASTContext::getBuiltinMSVaListDecl() const {
   return BuiltinMSVaListDecl;
 }
 
+RecordDecl *ASTContext::getBuiltinContractViolationDecl() const {
+  if (!CXXBuiltinContractViolationDecl) {
+    RecordDecl *RD;
+    RD = buildImplicitRecord("__clang_contract_violation");
+    RD->startDefinition();
+
+    // These types only need match the size and alignment of the actual
+    // field types.
+    enum { NumFields = 5 };
+    QualType FieldTypes[NumFields]{VoidPtrTy, VoidPtrTy, IntTy, IntTy, IntTy};
+    const char *FieldNames[NumFields]{
+        "source_location", "comment", "detection_mode", "semantic", "kind",
+    };
+
+    for (unsigned i = 0; i < NumFields; i++) {
+      FieldDecl *Field = FieldDecl::Create(
+          const_cast<ASTContext &>(*this), RD, SourceLocation(), SourceLocation(),
+          &Idents.get(FieldNames[i]), FieldTypes[i], /*TInfo=*/nullptr,
+          /*BitWidth=*/nullptr, /*Mutable=*/false, ICIS_NoInit);
+      Field->setAccess(AS_private);
+      RD->addDecl(Field);
+    }
+
+    RD->completeDefinition();
+    CXXBuiltinContractViolationDecl = RD;
+  }
+
+  return CXXBuiltinContractViolationDecl;
+}
+
 bool ASTContext::canBuiltinBeRedeclared(const FunctionDecl *FD) const {
   // Allow redecl custom type checking builtin for HLSL.
   if (LangOpts.HLSL && FD->getBuiltinID() != Builtin::NotBuiltin &&

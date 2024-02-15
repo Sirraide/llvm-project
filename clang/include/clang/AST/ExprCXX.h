@@ -2786,6 +2786,9 @@ public:
 
   static ContractExpr *CreateDeserialized(const ASTContext &C, ContractKind CK);
 
+  /// Create a contract violation object for this contract.
+  APValue CreateContractViolation(const ASTContext &C) const;
+
   SourceLocation getBeginLoc() const LLVM_READONLY { return KeywordLoc; }
   SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
 

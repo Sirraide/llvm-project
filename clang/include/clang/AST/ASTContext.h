@@ -369,6 +369,10 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// The typedef for the predefined 'BOOL' type.
   mutable TypedefDecl *BOOLDecl = nullptr;
 
+  /// Internal type with the same layout as C++26's
+  /// 'std::contracts::contract_violation'.
+  mutable RecordDecl *CXXBuiltinContractViolationDecl = nullptr;
+
   // Typedefs which may be provided defining the structure of Objective-C
   // pseudo-builtins
   QualType ObjCIdRedefinitionType;
@@ -2126,6 +2130,14 @@ public:
     assert(MSGuidTagDecl && "asked for GUID type but MS extensions disabled");
     return getTagDeclType(MSGuidTagDecl);
   }
+
+  /// Retrieve the internal version of 'std::contracts::contract_violation'.
+  ///
+  /// The library declaration of 'std::contracts::contract_violation' must
+  /// be compatible with this type in field count, order, alignment, and size,
+  /// though the types may differ. This is only to be used for validating that
+  /// as well as in CodeGen.
+  RecordDecl *getBuiltinContractViolationDecl() const;
 
   /// Return whether a declaration to a builtin is allowed to be
   /// overloaded/redeclared.

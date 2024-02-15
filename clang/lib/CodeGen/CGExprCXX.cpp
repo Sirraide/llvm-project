@@ -2375,8 +2375,7 @@ llvm::Value *CodeGenFunction::EmitDynamicCast(Address ThisAddr,
   return Value;
 }
 
-void CodeGenFunction::EmitContractExpr(
-    const ContractExpr *E) {
+void CodeGenFunction::EmitContractExpr(const ContractExpr *E) {
   auto Semantic = getLangOpts().getContractSemantic();
   if (Semantic == LangOptions::ContractSemanticKind::Ignore)
     return;
@@ -2391,30 +2390,24 @@ void CodeGenFunction::EmitContractExpr(
 
   EmitBlock(ContractViolated);
 
-  // Args.
-  // FIXME: Should be a compile-time constant.
-  auto Bits = getContext().getTypeSize(getContext().IntTy);
-  llvm::Value *SLoc = EmitScalarExpr(E->getSourceLoc());
-  llvm::Value *Comment =
-      EmitStringLiteralLValue(E->getComment()).getPointer(*this);
-  llvm::Value *DetectionMode =
-      Builder.getIntN(Bits, /*predicate_false*/ 0); // FIXME: magic
-  llvm::Value *ContractSemantic = Builder.getIntN(Bits, int(Semantic));
-  llvm::Value *ContractKind =
-      Builder.getIntN(Bits, unsigned(E->getContractKind()));
-
-  llvm::Value *Args[]{SLoc, Comment, DetectionMode, ContractSemantic,
-                      ContractKind};
+  // Create a global constant to store the contract violation.
+  ASTContext &Ctx = getContext();
+  APValue CV = E->CreateContractViolation(Ctx);
+  QualType Ty = Ctx.getRecordType(Ctx.getBuiltinContractViolationDecl());
+  UnnamedGlobalConstantDecl *Decl = Ctx.getUnnamedGlobalConstantDecl(Ty, CV);
+  llvm::Value *Arg = CGM.GetAddrOfUnnamedGlobalConstantDecl(Decl).getPointer();
 
   // Call the contract violation handler.
-  llvm::FunctionCallee C = CGM.GetOrCreateCXXContractViolationHandlerThunk();
-  llvm::Value *Handler = Builder.CreateCall(C, Args);
+  llvm::FunctionCallee Handler = CGM.GetOrCreateCXXContractViolationHandler();
+  Builder.CreateCall(Handler, Arg);
 
-  // In the 'enforce' semantic, the handler never returns.
-  if (Semantic == LangOptions::ContractSemanticKind::Enforce)
+  // If the contract semantic is set to 'enforce', and the contract violation
+  // handler returns, terminate.
+  if (Semantic == LangOptions::ContractSemanticKind::Enforce) {
+    llvm::FunctionCallee Terminate = CGM.getTerminateFn();
+    Builder.CreateCall(Terminate, {});
     Builder.CreateUnreachable();
-  else
-    Builder.CreateBr(ContractEnd);
+  }
 
   EmitBlock(ContractEnd);
 }

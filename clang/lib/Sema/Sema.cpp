@@ -1130,7 +1130,8 @@ void Sema::ActOnEndOfTranslationUnit() {
     if (LateTemplateParserCleanup)
       LateTemplateParserCleanup(OpaqueParser);
 
-    /*DeclareGlobalContractViolationHandler();*/
+    if (getLangOpts().CPlusPlus26)
+      DeclareGlobalContractViolationHandler();
 
     CheckDelayedMemberExceptionSpecs();
   } else {

@@ -331,6 +331,7 @@ ContractExpr::ContractExpr(const ASTContext &C, ContractKind CK,
   setDependence(computeDependence(this));
 }
 
+// ContractExpr
 ContractExpr *ContractExpr::Create(const ASTContext &C, ContractKind CK,
                                    Expr *Condition, SourceLocExpr *SourceLoc,
                                    StringLiteral *Comment,
@@ -349,6 +350,21 @@ ContractExpr *ContractExpr::CreateDeserialized(const ASTContext &C,
       totalSizeToAlloc<Stmt *>(CK == ContractKind::Postcondition ? 4 : 3);
   void *Mem = C.Allocate(Size, alignof(ContractExpr));
   return new (Mem) ContractExpr(EmptyShell(), CK);
+}
+
+APValue ContractExpr::CreateContractViolation(const ASTContext &C) const {
+  auto Idx = APValue::LValuePathEntry::ArrayIndex(0);
+  auto Int = [&](unsigned value) {
+    return APValue(C.MakeIntValue(value, C.IntTy));
+  };
+
+  APValue Value{APValue::UninitStruct(), 0, 5};
+  Value.getStructField(0) = getSourceLoc()->EvaluateInContext(C, nullptr);
+  Value.getStructField(1) = APValue(getComment(), {}, {Idx}, /*OnePastTheEnd=*/false);
+  Value.getStructField(2) = Int(/*predicate_false*/ 0); // FIXME: magic
+  Value.getStructField(3) = Int(unsigned(C.getLangOpts().getContractSemantic()));
+  Value.getStructField(4) = Int(unsigned(getContractKind()));
+  return Value;
 }
 
 // CXXPseudoDestructorExpr

@@ -3351,35 +3351,31 @@ bool Sema::FindDeallocationFunction(SourceLocation StartLoc, CXXRecordDecl *RD,
 }
 
 void Sema::DeclareGlobalContractViolationHandler() {
-  assert(false && "TODO");
-
-  /*if (GlobalContractViolationHandlerDeclared)
+  // TODO: Set this if the user declares a contract violation handler.
+  if (GlobalContractViolationHandlerDeclared)
     return;
-
-  // TODO: ALL OF THIS should be done at the end of the TU so we don't
-  // end up with two potentially different definitions of this type in
-  // the same TU in case contracts are used before <contract> is included.
+  GlobalContractViolationHandlerDeclared = true;
 
   // P2900: The Contract-Violation handler is a function named
   // ::handle_contract_violation that is attached to the global module
   if (getLangOpts().CPlusPlusModules && getCurrentModule())
     PushGlobalModuleFragment(SourceLocation());
 
+  // TODO: Actually declare the global contract violation handler?
   DeclareStdContractsContractViolation();
 
   if (getLangOpts().CPlusPlusModules && getCurrentModule())
-    PopGlobalModuleFragment();*/
+    PopGlobalModuleFragment();
 }
 
 /// Find or declare the std::contracts::contract_violation class.
 void Sema::DeclareStdContractsContractViolation() {
-  assert(false && "TODO");
-  /*if (StdContractsContractViolationDecl)
+  if (StdContractsContractViolationDecl)
     return;
 
-  // TODO: Declare source_location implicitly.
-  CXXRecordDecl *RD = nullptr;*/
-/*  auto *II = &PP.getIdentifierTable().get("contract_violation");
+/*  // TODO: Declare source_location implicitly.
+  CXXRecordDecl *RD = nullptr;
+  auto *II = &PP.getIdentifierTable().get("contract_violation");
   if (StdContractsNamespace) {
     LookupResult ResultSL(*this, II, SourceLocation(), Sema::LookupOrdinaryName);
     if (LookupQualifiedName(ResultSL, StdContractsNamespace))
