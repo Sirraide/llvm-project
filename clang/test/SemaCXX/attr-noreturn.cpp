@@ -10,7 +10,7 @@ namespace test5 {
 
   int &test1() {
     a.nofail();
-  } // expected-warning {{non-void function does not return a value}}
+  } // expected-error {{non-void function does not return a value}}
 
   int &test2() {
     a.fail();
@@ -121,7 +121,7 @@ namespace destructor_tests {
     const MM& mm = MM();
     const NN& nn = NN();
     const OO& oo = OO();
-  }  // expected-warning {{function declared 'noreturn' should not return}}
+  }  // expected-error {{function declared 'noreturn' should not return}}
 
   struct P {
     ~P() __attribute__((noreturn)) { fail(); }
@@ -147,7 +147,7 @@ namespace destructor_tests {
   __attribute__((noreturn)) void test34() {
     A *a = new A;
     delete a;
-  }  // expected-warning {{function declared 'noreturn' should not return}}
+  }  // expected-error {{function declared 'noreturn' should not return}}
 
   struct S {
     virtual ~S();
@@ -162,7 +162,7 @@ namespace destructor_tests {
   __attribute__((noreturn)) void test35() {
     S *s = new T;
     delete s;
-  }  // expected-warning {{function declared 'noreturn' should not return}}
+  }  // expected-error {{function declared 'noreturn' should not return}}
 }
 
 // PR5620
@@ -200,7 +200,7 @@ class xpto {
 };
 
 int xpto::blah() {
-  return 3; // expected-warning {{function 'blah' declared 'noreturn' should not return}}
+  return 3; // expected-error {{function declared 'noreturn' should not return}}
 }
 
 // PR12948

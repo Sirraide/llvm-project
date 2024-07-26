@@ -17,14 +17,14 @@ int f2(void) __attribute__((noreturn(1, 2))); // expected-error {{'noreturn' att
 
 void f3(void) __attribute__((noreturn));
 void f3(void) {
-  return;  // expected-warning {{function 'f3' declared 'noreturn' should not return}}
+  return;  // expected-warning {{function declared 'noreturn' should not return}}
 }
 
 #pragma clang diagnostic error "-Winvalid-noreturn"
 
 void f4(void) __attribute__((noreturn));
 void f4(void) {
-  return;  // expected-error {{function 'f4' declared 'noreturn' should not return}}
+  return;  // expected-error {{function declared 'noreturn' should not return}}
 }
 
 // PR4685

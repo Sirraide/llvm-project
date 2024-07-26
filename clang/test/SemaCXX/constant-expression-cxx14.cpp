@@ -68,7 +68,7 @@ constexpr int j(int k) {
     }
   }
 } // expected-note 2{{control reached end of constexpr function}}
-  // cxx23-warning@-1 {{does not return a value in all control paths}}
+  // expected-error@-1 {{does not return a value in all control paths}}
 static_assert(j(0) == -3, "");
 static_assert(j(1) == 5, "");
 static_assert(j(2), ""); // expected-error {{constant expression}} expected-note {{in call to 'j(2)'}}

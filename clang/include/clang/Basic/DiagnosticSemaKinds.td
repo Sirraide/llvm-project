@@ -692,13 +692,26 @@ def err_thread_non_global : Error<
 def err_thread_unsupported : Error<
   "thread-local storage is not supported for the current target">;
 
-// FIXME: Combine fallout warnings to just one warning.
-def warn_maybe_falloff_nonvoid_function : Warning<
-  "non-void function does not return a value in all control paths">,
-  InGroup<ReturnType>;
+// We need two different diagnostics here because we need this
+// to be a only a warning in C, but an error by default in other
+// language modes.
 def warn_falloff_nonvoid_function : Warning<
-  "non-void function does not return a value">,
-  InGroup<ReturnType>;
+  "non-void %select{function|block|lambda|coroutine}0 does not return a value"
+  "%select{| in all control paths}1">, InGroup<ReturnType>;
+
+def warn_noreturn_function_has_return_expr : Warning<
+  "%select{function|block|lambda|coroutine}0 declared 'noreturn' should not return">,
+  InGroup<InvalidNoreturn>;
+
+def warn_falloff_nonvoid_function_default_err : Warning<warn_falloff_nonvoid_function.Summary>,
+  InGroup<ReturnType>, DefaultError;
+
+// This is a hard error for lambdas and blocks, and a DefaultError warning
+// for functions in C++.
+def err_noreturn_function_has_return_expr : Error<warn_noreturn_function_has_return_expr.Summary>;
+def warn_noreturn_function_has_return_expr_default_err : Warning<warn_noreturn_function_has_return_expr.Summary>,
+    InGroup<InvalidNoreturn>, DefaultError;
+
 def warn_const_attr_with_pure_attr : Warning<
   "'const' attribute imposes more restrictions; 'pure' attribute ignored">,
   InGroup<IgnoredAttributes>;
@@ -706,16 +719,6 @@ def warn_pure_function_returns_void : Warning<
   "'%select{pure|const}0' attribute on function returning 'void'; attribute ignored">,
   InGroup<IgnoredAttributes>;
 
-def err_maybe_falloff_nonvoid_block : Error<
-  "non-void block does not return a value in all control paths">;
-def err_falloff_nonvoid_block : Error<
-  "non-void block does not return a value">;
-def warn_maybe_falloff_nonvoid_coroutine : Warning<
-  "non-void coroutine does not return a value in all control paths">,
-  InGroup<ReturnType>;
-def warn_falloff_nonvoid_coroutine : Warning<
-  "non-void coroutine does not return a value">,
-  InGroup<ReturnType>;
 def warn_suggest_noreturn_function : Warning<
   "%select{function|method}0 %1 could be declared with attribute 'noreturn'">,
   InGroup<MissingNoreturn>, DefaultIgnore;
@@ -8246,14 +8249,6 @@ let CategoryName = "Lambda Issue" in {
     "lambda expression in default argument cannot capture any entity">;
   def err_lambda_incomplete_result : Error<
     "incomplete result type %0 in lambda expression">;
-  def err_noreturn_lambda_has_return_expr : Error<
-    "lambda declared 'noreturn' should not return">;
-  def warn_maybe_falloff_nonvoid_lambda : Warning<
-    "non-void lambda does not return a value in all control paths">,
-    InGroup<ReturnType>;
-  def warn_falloff_nonvoid_lambda : Warning<
-    "non-void lambda does not return a value">,
-    InGroup<ReturnType>;
   def err_access_lambda_capture : Error<
     // The ERRORs represent other special members that aren't constructors, in
     // hopes that someone will bother noticing and reporting if they appear
@@ -10408,14 +10403,6 @@ def err_return_init_list : Error<
   "must not return a value">;
 def err_ctor_dtor_returns_void : Error<
   "%select{constructor|destructor}1 %0 must not return void expression">;
-def warn_noreturn_function_has_return_expr : Warning<
-  "function %0 declared 'noreturn' should not return">,
-  InGroup<InvalidNoreturn>;
-def warn_falloff_noreturn_function : Warning<
-  "function declared 'noreturn' should not return">,
-  InGroup<InvalidNoreturn>;
-def err_noreturn_block_has_return_expr : Error<
-  "block declared 'noreturn' should not return">;
 def err_carries_dependency_missing_on_first_decl : Error<
   "%select{function|parameter}0 declared '[[carries_dependency]]' "
   "after its first declaration">;

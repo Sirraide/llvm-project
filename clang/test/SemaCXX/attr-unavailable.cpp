@@ -151,7 +151,7 @@ T unavailable_template() __attribute__((unavailable));
 // expected-note@-1 {{'unavailable_template<int>' has been explicitly marked unavailable here}}
 
 template <class T>
-int has_default_arg_template(T x = unavailable_template<T>()) {}
+int has_default_arg_template(T x = unavailable_template<T>()) { return 0; }
 // expected-error@-1 {{'unavailable_template<int>' is unavailable}}
 
 int instantiate_it = has_default_arg_template<int>();
@@ -159,7 +159,7 @@ int instantiate_it = has_default_arg_template<int>();
 
 template <class T>
 int has_default_arg_template2(T x = unavailable_template<T>())
-    __attribute__((unavailable)) {}
+    __attribute__((unavailable)) { return 0; }
 
 __attribute__((unavailable))
 int instantiate_it2 = has_default_arg_template2<int>();

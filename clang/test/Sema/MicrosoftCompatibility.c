@@ -20,7 +20,7 @@ enum ENUM2 {
 };
 
 __declspec(noreturn) void f6( void ) {
-	return;  // expected-warning {{function 'f6' declared 'noreturn' should not return}}
+	return;  // expected-warning {{function declared 'noreturn' should not return}}
 }
 
 __declspec(align(32768)) struct S1 { int a; } s;	/* expected-error {{requested alignment must be 8192 bytes or smaller}} */

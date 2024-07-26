@@ -547,108 +547,73 @@ static ControlFlowKind CheckFallThrough(AnalysisDeclContext &AC) {
 namespace {
 
 struct CheckFallThroughDiagnostics {
-  unsigned diag_MaybeFallThrough_HasNoReturn;
-  unsigned diag_MaybeFallThrough_ReturnsNonVoid;
-  unsigned diag_AlwaysFallThrough_HasNoReturn;
-  unsigned diag_AlwaysFallThrough_ReturnsNonVoid;
-  unsigned diag_NeverFallThroughOrReturn;
-  enum { Function, Block, Lambda, Coroutine } funMode;
+  unsigned diag_NeverFallThroughOrReturn = 0;
+  unsigned diag_FallThrough_HasNoReturn =
+      diag::warn_noreturn_function_has_return_expr_default_err;
+  unsigned diag_FallThrough_ReturnsNonVoid =
+      diag::warn_falloff_nonvoid_function_default_err;
+  enum FunModeTy { Function, Block, Lambda, Coroutine } FunMode;
   SourceLocation FuncLoc;
 
+private:
+  CheckFallThroughDiagnostics(const Decl *D, FunModeTy Mode)
+      : FunMode(Mode), FuncLoc(D ? D->getLocation() : SourceLocation()) {
+    // Downgrade not returning from a non-void function to a warning in C,
+    // as, unfortunately, this is legal in C, so long as the return value
+    // is never used.
+    //
+    // This does not apply to blocks: we've always treated this as an error
+    // in that case, even in C.
+    if (Mode == Function && !D->getLangOpts().CPlusPlus) {
+      diag_FallThrough_ReturnsNonVoid = diag::warn_falloff_nonvoid_function;
+      diag_FallThrough_HasNoReturn =
+          diag::warn_noreturn_function_has_return_expr;
+    }
+  }
+
+public:
   static CheckFallThroughDiagnostics MakeForFunction(const Decl *Func) {
-    CheckFallThroughDiagnostics D;
-    D.FuncLoc = Func->getLocation();
-    D.diag_MaybeFallThrough_HasNoReturn =
-      diag::warn_falloff_noreturn_function;
-    D.diag_MaybeFallThrough_ReturnsNonVoid =
-      diag::warn_maybe_falloff_nonvoid_function;
-    D.diag_AlwaysFallThrough_HasNoReturn =
-      diag::warn_falloff_noreturn_function;
-    D.diag_AlwaysFallThrough_ReturnsNonVoid =
-      diag::warn_falloff_nonvoid_function;
+    CheckFallThroughDiagnostics D(Func, Function);
 
     // Don't suggest that virtual functions be marked "noreturn", since they
-    // might be overridden by non-noreturn functions.
-    bool isVirtualMethod = false;
-    if (const CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(Func))
-      isVirtualMethod = Method->isVirtual();
+    // might be overridden by non-noreturn functions. Similarly, don't suggest
+    // that template instantiations be marked "noreturn"
+    auto *MD = dyn_cast<CXXMethodDecl>(Func);
+    auto *FD = dyn_cast<FunctionDecl>(Func);
+    if (!(MD && MD->isVirtual()) && !(FD && FD->isTemplateInstantiation()))
+      D.diag_NeverFallThroughOrReturn = diag::warn_suggest_noreturn_function;
 
-    // Don't suggest that template instantiations be marked "noreturn"
-    bool isTemplateInstantiation = false;
-    if (const FunctionDecl *Function = dyn_cast<FunctionDecl>(Func))
-      isTemplateInstantiation = Function->isTemplateInstantiation();
-
-    if (!isVirtualMethod && !isTemplateInstantiation)
-      D.diag_NeverFallThroughOrReturn =
-        diag::warn_suggest_noreturn_function;
-    else
-      D.diag_NeverFallThroughOrReturn = 0;
-
-    D.funMode = Function;
     return D;
   }
 
   static CheckFallThroughDiagnostics MakeForCoroutine(const Decl *Func) {
-    CheckFallThroughDiagnostics D;
-    D.FuncLoc = Func->getLocation();
-    D.diag_MaybeFallThrough_HasNoReturn = 0;
-    D.diag_MaybeFallThrough_ReturnsNonVoid =
-        diag::warn_maybe_falloff_nonvoid_coroutine;
-    D.diag_AlwaysFallThrough_HasNoReturn = 0;
-    D.diag_AlwaysFallThrough_ReturnsNonVoid =
-        diag::warn_falloff_nonvoid_coroutine;
-    D.diag_NeverFallThroughOrReturn = 0;
-    D.funMode = Coroutine;
+    CheckFallThroughDiagnostics D(Func, Coroutine);
+    D.diag_FallThrough_HasNoReturn = 0;
     return D;
   }
 
-  static CheckFallThroughDiagnostics MakeForBlock() {
-    CheckFallThroughDiagnostics D;
-    D.diag_MaybeFallThrough_HasNoReturn =
-      diag::err_noreturn_block_has_return_expr;
-    D.diag_MaybeFallThrough_ReturnsNonVoid =
-      diag::err_maybe_falloff_nonvoid_block;
-    D.diag_AlwaysFallThrough_HasNoReturn =
-      diag::err_noreturn_block_has_return_expr;
-    D.diag_AlwaysFallThrough_ReturnsNonVoid =
-      diag::err_falloff_nonvoid_block;
-    D.diag_NeverFallThroughOrReturn = 0;
-    D.funMode = Block;
-    return D;
+  static CheckFallThroughDiagnostics MakeForBlock(const Decl *BlockDecl) {
+    return CheckFallThroughDiagnostics(BlockDecl, Block);
   }
 
   static CheckFallThroughDiagnostics MakeForLambda() {
-    CheckFallThroughDiagnostics D;
-    D.diag_MaybeFallThrough_HasNoReturn =
-      diag::err_noreturn_lambda_has_return_expr;
-    D.diag_MaybeFallThrough_ReturnsNonVoid =
-      diag::warn_maybe_falloff_nonvoid_lambda;
-    D.diag_AlwaysFallThrough_HasNoReturn =
-      diag::err_noreturn_lambda_has_return_expr;
-    D.diag_AlwaysFallThrough_ReturnsNonVoid =
-      diag::warn_falloff_nonvoid_lambda;
-    D.diag_NeverFallThroughOrReturn = 0;
-    D.funMode = Lambda;
-    return D;
+    return CheckFallThroughDiagnostics(nullptr, Lambda);
   }
 
   bool checkDiagnostics(DiagnosticsEngine &D, bool ReturnsVoid,
                         bool HasNoReturn) const {
-    if (funMode == Function) {
+    if (FunMode == Function) {
       return (ReturnsVoid ||
-              D.isIgnored(diag::warn_maybe_falloff_nonvoid_function,
-                          FuncLoc)) &&
+              D.isIgnored(diag_FallThrough_ReturnsNonVoid, FuncLoc)) &&
              (!HasNoReturn ||
-              D.isIgnored(diag::warn_noreturn_function_has_return_expr,
+              D.isIgnored(diag_FallThrough_HasNoReturn,
                           FuncLoc)) &&
              (!ReturnsVoid ||
               D.isIgnored(diag::warn_suggest_noreturn_block, FuncLoc));
     }
-    if (funMode == Coroutine) {
+    if (FunMode == Coroutine) {
       return (ReturnsVoid ||
-              D.isIgnored(diag::warn_maybe_falloff_nonvoid_function, FuncLoc) ||
-              D.isIgnored(diag::warn_maybe_falloff_nonvoid_coroutine,
-                          FuncLoc)) &&
+              D.isIgnored(diag_FallThrough_ReturnsNonVoid, FuncLoc)) &&
              (!HasNoReturn);
     }
     // For blocks / lambdas.
@@ -670,7 +635,6 @@ static void CheckFallThroughForBody(Sema &S, const Decl *D, const Stmt *Body,
 
   bool ReturnsVoid = false;
   bool HasNoReturn = false;
-  bool IsCoroutine = FSI->isCoroutine();
 
   if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
     if (const auto *CBody = dyn_cast<CoroutineBodyStmt>(Body))
@@ -699,47 +663,39 @@ static void CheckFallThroughForBody(Sema &S, const Decl *D, const Stmt *Body,
   if (CD.checkDiagnostics(Diags, ReturnsVoid, HasNoReturn))
       return;
   SourceLocation LBrace = Body->getBeginLoc(), RBrace = Body->getEndLoc();
-  auto EmitDiag = [&](SourceLocation Loc, unsigned DiagID) {
-    if (IsCoroutine)
-      S.Diag(Loc, DiagID) << FSI->CoroutinePromise->getType();
-    else
-      S.Diag(Loc, DiagID);
-  };
 
   // cpu_dispatch functions permit empty function bodies for ICC compatibility.
   if (D->getAsFunction() && D->getAsFunction()->isCPUDispatchMultiVersion())
     return;
 
   // Either in a function body compound statement, or a function-try-block.
-  switch (CheckFallThrough(AC)) {
-    case UnknownFallThrough:
-      break;
+  switch (auto Res = CheckFallThrough(AC)) {
+  case UnknownFallThrough:
+    break;
 
-    case MaybeFallThrough:
-      if (HasNoReturn)
-        EmitDiag(RBrace, CD.diag_MaybeFallThrough_HasNoReturn);
-      else if (!ReturnsVoid)
-        EmitDiag(RBrace, CD.diag_MaybeFallThrough_ReturnsNonVoid);
-      break;
-    case AlwaysFallThrough:
-      if (HasNoReturn)
-        EmitDiag(RBrace, CD.diag_AlwaysFallThrough_HasNoReturn);
-      else if (!ReturnsVoid)
-        EmitDiag(RBrace, CD.diag_AlwaysFallThrough_ReturnsNonVoid);
-      break;
-    case NeverFallThroughOrReturn:
-      if (ReturnsVoid && !HasNoReturn && CD.diag_NeverFallThroughOrReturn) {
-        if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-          S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn) << 0 << FD;
-        } else if (const ObjCMethodDecl *MD = dyn_cast<ObjCMethodDecl>(D)) {
-          S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn) << 1 << MD;
-        } else {
-          S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn);
-        }
+  case MaybeFallThrough:
+  case AlwaysFallThrough:
+    if (HasNoReturn)
+      S.Diag(RBrace, CD.diag_FallThrough_HasNoReturn) << CD.FunMode;
+    else if (!ReturnsVoid)
+      S.Diag(RBrace, CD.diag_FallThrough_ReturnsNonVoid)
+          << CD.FunMode
+          << (Res == MaybeFallThrough ? /* in all control paths */ 1 : 0);
+    break;
+
+  case NeverFallThroughOrReturn:
+    if (ReturnsVoid && !HasNoReturn && CD.diag_NeverFallThroughOrReturn) {
+      if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
+        S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn) << 0 << FD;
+      } else if (const ObjCMethodDecl *MD = dyn_cast<ObjCMethodDecl>(D)) {
+        S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn) << 1 << MD;
+      } else {
+        S.Diag(LBrace, CD.diag_NeverFallThroughOrReturn);
       }
-      break;
-    case NeverFallThrough:
-      break;
+    }
+    break;
+  case NeverFallThrough:
+    break;
   }
 }
 
@@ -2559,10 +2515,14 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
 
   // We avoid doing analysis-based warnings when there are errors for
   // two reasons:
+  //
   // (1) The CFGs often can't be constructed (if the body is invalid), so
   //     don't bother trying.
   // (2) The code already has problems; running the analysis just takes more
   //     time.
+  //
+  // Note that this does 'not' include errors upgraded from warnings, whether
+  // by default or using '-Werror'.
   DiagnosticsEngine &Diags = S.getDiagnostics();
 
   // Do not do any analysis if we are going to just ignore them.
@@ -2575,7 +2535,10 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
   if (cast<DeclContext>(D)->isDependentContext())
     return;
 
-  if (S.hasUncompilableErrorOccurred()) {
+  // TODO: Investigate if it's worthwhile switching to not running this
+  // if there are errors in the current function using
+  // 'S.hasAnyUnrecoverableErrorsInThisFunction()'.
+  if (Diags.hasUnrecoverableErrorOccurred()) {
     // Flush out any possibly unreachable diagnostics.
     flushDiagnostics(S, fscope);
     return;
@@ -2670,15 +2633,14 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
   // Warning: check missing 'return'
   if (P.enableCheckFallThrough) {
     const CheckFallThroughDiagnostics &CD =
-        (isa<BlockDecl>(D)
-             ? CheckFallThroughDiagnostics::MakeForBlock()
-             : (isa<CXXMethodDecl>(D) &&
-                cast<CXXMethodDecl>(D)->getOverloadedOperator() == OO_Call &&
-                cast<CXXMethodDecl>(D)->getParent()->isLambda())
-                   ? CheckFallThroughDiagnostics::MakeForLambda()
-                   : (fscope->isCoroutine()
-                          ? CheckFallThroughDiagnostics::MakeForCoroutine(D)
-                          : CheckFallThroughDiagnostics::MakeForFunction(D)));
+        (isa<BlockDecl>(D) ? CheckFallThroughDiagnostics::MakeForBlock(D)
+         : (isa<CXXMethodDecl>(D) &&
+            cast<CXXMethodDecl>(D)->getOverloadedOperator() == OO_Call &&
+            cast<CXXMethodDecl>(D)->getParent()->isLambda())
+             ? CheckFallThroughDiagnostics::MakeForLambda()
+             : (fscope->isCoroutine()
+                    ? CheckFallThroughDiagnostics::MakeForCoroutine(D)
+                    : CheckFallThroughDiagnostics::MakeForFunction(D)));
     CheckFallThroughForBody(S, D, Body, BlockType, CD, AC, fscope);
   }
 

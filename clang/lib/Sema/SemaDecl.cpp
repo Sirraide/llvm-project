@@ -16127,7 +16127,11 @@ Decl *Sema::ActOnFinishFunctionBody(Decl *dcl, Stmt *Body,
           getDiagnostics().getSuppressAllDiagnostics()) {
         DiscardCleanupsInEvaluationContext();
       }
-      if (!hasUncompilableErrorOccurred() && !isa<FunctionTemplateDecl>(dcl)) {
+
+      // TODO: Investigate if switching to
+      // 'hasAnyUnrecoverableErrorsInThisFunction()' makes sense here.
+      if (!getDiagnostics().hasUnrecoverableErrorOccurred() &&
+          !isa<FunctionTemplateDecl>(dcl)) {
         // Since the body is valid, issue any analysis-based warnings that are
         // enabled.
         ActivePolicy = &WP;

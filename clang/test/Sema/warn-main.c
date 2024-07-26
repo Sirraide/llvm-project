@@ -21,7 +21,7 @@ inline int main(void) {
   return 0;
 }
 
-// expected-warning@+5 {{function 'main' declared 'noreturn' should not return}}
+// expected-warning@+5 {{function declared 'noreturn' should not return}}
 // expected-warning@+2 {{'main' is not allowed to be declared _Noreturn}}
 // expected-note@+1 {{remove '_Noreturn'}}
 _Noreturn int main(void) {
