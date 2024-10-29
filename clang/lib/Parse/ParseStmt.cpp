@@ -2350,9 +2350,9 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
     }
 
     ForStmt = Actions.ActOnExpansionStmt(
-        TemplateLoc, ForLoc, FirstPart.get(), ForRangeInfo.LoopVar.get(),
-        ForRangeInfo.ColonLoc, ForRangeInfo.RangeExpr.get(),
-        T.getCloseLocation());
+        TemplateLoc, ForLoc, ForRangeInfo.ColonLoc, T.getCloseLocation(),
+        FirstPart.get(), ForRangeInfo.LoopVar.get(),
+        ForRangeInfo.RangeExpr.get());
   } else if (ForRangeInfo.ParsedForRangeDecl()) {
     ForStmt = Actions.ActOnCXXForRangeStmt(
         getCurScope(), ForLoc, CoawaitLoc, FirstPart.get(),

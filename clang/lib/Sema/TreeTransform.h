@@ -3759,6 +3759,15 @@ public:
     return SemaRef.BuildNestedRequirement(Constraint);
   }
 
+  StmtResult RebuildExpansionStmt(ExpansionStmt *OldES, Stmt *InitStmt,
+                                  Stmt *LoopVar, Expr *ExpansionInit,
+                                  Stmt *Pattern, Stmt *InstantiatedBody) {
+    return SemaRef.BuildExpansionStmt(OldES->getTemplateLoc(),
+                                      OldES->getForLoc(), OldES->getColonLoc(),
+                                      OldES->getRParenLoc(), InitStmt, LoopVar,
+                                      ExpansionInit, Pattern, InstantiatedBody);
+  }
+
   /// \brief Build a new Objective-C boxed expression.
   ///
   /// By default, performs semantic analysis to build the new expression.
@@ -16920,13 +16929,41 @@ TreeTransform<Derived>::TransformCapturedStmt(CapturedStmt *S) {
 }
 
 template <typename Derived>
-StmtResult TreeTransform<Derived>::TransformExpansionStmt(ExpansionStmt *) {
-  assert(false && "TODO");
+StmtResult TreeTransform<Derived>::TransformExpansionStmt(ExpansionStmt * ES) {
+  StmtResult Init = getDerived().TransformStmt(ES->getInitStatement());
+
+  // If the statement has already been expanded, only
+  // transform the instantiated body; the rest is no
+  // longer relevant.
+  if (ES->getInstantiatedBody()) {
+    StmtResult Body = getDerived().TransformStmt(ES->getInstantiatedBody());
+    if (Body.isInvalid())
+      return StmtError();
+    return getDerived().RebuildExpansionStmt(ES, Init.get(), ES->getLoopVar(),
+                                             ES->getExpansionInitializer(),
+                                             ES->getPattern(), Body.get());
+  }
+
+  // Otherwise, transform the parts and try to expand it.
+  StmtResult LoopVar = getDerived().TransformStmt(ES->getLoopVar());
+  ExprResult Exp = getDerived().TransformExpr(ES->getExpansionInitializer());
+  StmtResult Pattern = getDerived().TransformStmt(ES->getPattern());
+  if (Init.isInvalid() || LoopVar.isInvalid() || Exp.isInvalid() ||
+      Pattern.isInvalid())
+    return StmtError();
+  return getDerived().RebuildExpansionStmt(ES, Init.get(), LoopVar.get(),
+                                           Exp.get(), Pattern.get(), nullptr);
 }
 
 template <typename Derived>
 ExprResult
 TreeTransform<Derived>::TransformExpansionGetExpr(ExpansionGetExpr *E) {
+  // This expression is an always-dependent placeholder designed to be
+  // replaced with something else during expansion. If we're not expanding
+  // the containing expansion statement, simply return it unchanged since
+  // it contains no actual state.
+  if (!E->isBeingExpanded())
+    return E;
   return getDerived().TransformExpr(E->getExpansion());
 }
 

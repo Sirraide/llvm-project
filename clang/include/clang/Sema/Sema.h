@@ -10891,10 +10891,16 @@ public:
                                            unsigned NumParams);
 
   StmtResult ActOnExpansionStmt(SourceLocation TemplateLoc,
-                                SourceLocation ForLoc, Stmt *InitStmt,
-                                Stmt *RangeDecl, SourceLocation ColonLoc,
-                                Expr *ExpansionInitializer,
-                                SourceLocation RParenLoc);
+                                SourceLocation ForLoc, SourceLocation ColonLoc,
+                                SourceLocation RParenLoc, Stmt *InitStmt,
+                                Stmt *LoopVar, Expr *ExpansionInitializer);
+
+  StmtResult BuildExpansionStmt(SourceLocation TemplateLoc,
+                                SourceLocation ForLoc, SourceLocation ColonLoc,
+                                SourceLocation RParenLoc, Stmt *InitStmt,
+                                Stmt *LoopVar, Expr *ExpansionInitializer,
+                                Stmt *Pattern = nullptr,
+                                Stmt *InstantiatedBody = nullptr);
 
   StmtResult FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body);
 

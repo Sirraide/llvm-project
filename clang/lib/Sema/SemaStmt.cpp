@@ -4627,21 +4627,13 @@ StmtResult Sema::ActOnCapturedRegionEnd(Stmt *S) {
 }
 
 StmtResult Sema::ActOnExpansionStmt(SourceLocation TemplateLoc,
-                                    SourceLocation ForLoc, Stmt *InitStmt,
-                                    Stmt *RangeDecl, SourceLocation ColonLoc,
-                                    Expr *ExpansionInitializer,
-                                    SourceLocation RParenLoc) {
-  if (!RangeDecl || !ExpansionInitializer ||
-      CheckForRangeLoopVarAndRange(*this, RangeDecl, ExpansionInitializer))
+                                    SourceLocation ForLoc,
+                                    SourceLocation ColonLoc,
+                                    SourceLocation RParenLoc, Stmt *InitStmt,
+                                    Stmt *LoopVar, Expr *ExpansionInitializer) {
+  if (!LoopVar || !ExpansionInitializer ||
+      CheckForRangeLoopVarAndRange(*this, LoopVar, ExpansionInitializer))
     return StmtError();
-
-  if (ExpansionInitializer->isTypeDependent() ||
-      ExpansionInitializer->isValueDependent()) {
-    Diag(TemplateLoc, Diags.getCustomDiagID(
-                          DiagnosticsEngine::Error,
-                          "TODO: Handle dependent expansion initialisers"));
-    return StmtError();
-  }
 
   if (not isa<InitListExpr>(ExpansionInitializer)) {
     Diag(TemplateLoc, Diags.getCustomDiagID(
@@ -4650,16 +4642,30 @@ StmtResult Sema::ActOnExpansionStmt(SourceLocation TemplateLoc,
     return StmtError();
   }
 
-  // FIXME: We need to make sure that DREs that refer to this var decl
-  // point to the instantiated declaration instead. Making the var decl
-  // type-dependent or sth like that should be enough (add an extra bit
-  // that stores whether it is the variable of an expansion statement)?
-  Decl *Var = cast<DeclStmt>(RangeDecl)->getSingleDecl();
+  Decl *Var = cast<DeclStmt>(LoopVar)->getSingleDecl();
   cast<VarDecl>(Var)->setInit(new (Context)
                                   ExpansionGetExpr(Context.DependentTy));
 
-  return new (Context) ExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc,
-                                     InitStmt, RangeDecl, ExpansionInitializer);
+  return BuildExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc, InitStmt,
+                            LoopVar, ExpansionInitializer);
+}
+
+StmtResult Sema::BuildExpansionStmt(SourceLocation TemplateLoc,
+                                    SourceLocation ForLoc,
+                                    SourceLocation ColonLoc,
+                                    SourceLocation RParenLoc, Stmt *InitStmt,
+                                    Stmt *LoopVar, Expr *ExpansionInitializer,
+                                    Stmt *Pattern, Stmt *InstantiatedBody) {
+  auto *ES =
+      new (Context) ExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc,
+                                  InitStmt, LoopVar, ExpansionInitializer);
+
+  if (Pattern && !InstantiatedBody)
+    return FinishExpansionStmt(ES, Pattern);
+
+  ES->setPattern(Pattern);
+  ES->setInstantiatedBody(InstantiatedBody);
+  return ES;
 }
 
 StmtResult Sema::FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body) {
@@ -4671,6 +4677,11 @@ StmtResult Sema::FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body) {
   DiagnoseEmptyStmtBody(ES->getRParenLoc(), Body,
                         diag::warn_empty_range_based_for_body);
 
+  auto *ExpansionInitializer = ES->getExpansionInitializer();
+  if (ExpansionInitializer->isTypeDependent() ||
+      ExpansionInitializer->isValueDependent())
+    return ES;
+
   // Initialiser is an init-list. Expand this to:
   // {
   //    init-stmt;
@@ -4681,7 +4692,6 @@ StmtResult Sema::FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body) {
   // }
   //
   auto *InitStmt = ES->getInitStatement();
-  auto *ExpansionInitializer = ES->getExpansionInitializer();
   SmallVector<Stmt *> Stmts;
   if (InitStmt)
     Stmts.push_back(InitStmt);

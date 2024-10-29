@@ -541,7 +541,7 @@ class ExpansionStmt : public Stmt {
 public:
   ExpansionStmt(SourceLocation TemplateLoc, SourceLocation ForLoc,
                 SourceLocation ColonLoc, SourceLocation RParenLoc,
-                Stmt *InitStatement, Stmt *LoopVar, Stmt *ExpansionInitializer)
+                Stmt *InitStatement, Stmt *LoopVar, Expr *ExpansionInitializer)
       : Stmt(ExpansionStmtClass), TemplateLoc(TemplateLoc), ForLoc(ForLoc),
         ColonLoc(ColonLoc), RParenLoc(RParenLoc) {
     SubStmts[SubStmt::InitStatement] = InitStatement;
@@ -557,8 +557,8 @@ public:
   Stmt *getInstantiatedBody() const { return SubStmts[InstantiatedBody]; }
   Stmt *getInitStatement() const { return SubStmts[InitStatement]; }
   Stmt *getLoopVar() const { return SubStmts[LoopVar]; }
-  Stmt *getExpansionInitializer() const {
-    return SubStmts[ExpansionInitializer];
+  Expr *getExpansionInitializer() const {
+    return cast<Expr>(SubStmts[ExpansionInitializer]);
   }
 
   void setPattern(Stmt *S) { SubStmts[Pattern] = S; }
