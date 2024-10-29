@@ -5746,6 +5746,12 @@ static EvalStmtResult EvaluateStmt(StmtResult &Result, EvalInfo &Info,
     return Scope.destroy() ? ESR_Succeeded : ESR_Failed;
   }
 
+  case Stmt::ExpansionStmtClass: {
+    auto *ES = cast<ExpansionStmt>(S);
+    assert(ES->getInstantiatedBody() && "Evaluating unexpanded statement?");
+    return EvaluateStmt(Result, Info, ES->getInstantiatedBody(), Case);
+  }
+
   case Stmt::SwitchStmtClass:
     return EvaluateSwitch(Result, Info, cast<SwitchStmt>(S));
 
@@ -16981,6 +16987,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::SYCLUniqueStableNameExprClass:
   case Expr::CXXParenListInitExprClass:
   case Expr::HLSLOutArgExprClass:
+  case Expr::ExpansionGetExprClass:
     return ICEDiag(IK_NotICE, E->getBeginLoc());
 
   case Expr::InitListExprClass: {
