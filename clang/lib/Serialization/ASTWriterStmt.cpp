@@ -2382,6 +2382,14 @@ void ASTStmtWriter::VisitSEHLeaveStmt(SEHLeaveStmt *S) {
   Code = serialization::STMT_SEH_LEAVE;
 }
 
+void ASTStmtWriter::VisitExpansionStmt(ExpansionStmt *S) {
+  assert(false && "TODO");
+}
+
+void ASTStmtWriter::VisitExpansionGetExpr(ExpansionGetExpr *S) {
+  assert(false && "TODO");
+}
+
 //===----------------------------------------------------------------------===//
 // OpenMP Directives.
 //===----------------------------------------------------------------------===//

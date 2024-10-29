@@ -49,6 +49,7 @@ def ObjCAutoreleasePoolStmt : StmtNode<Stmt>;
 def CXXCatchStmt : StmtNode<Stmt>;
 def CXXTryStmt : StmtNode<Stmt>;
 def CXXForRangeStmt : StmtNode<Stmt>;
+def ExpansionStmt : StmtNode<Stmt>;
 
 // C++ Coroutines statements
 def CoroutineBodyStmt : StmtNode<Stmt>;
@@ -162,6 +163,7 @@ def MaterializeTemporaryExpr : StmtNode<Expr>;
 def LambdaExpr : StmtNode<Expr>;
 def CXXFoldExpr : StmtNode<Expr>;
 def CXXParenListInitExpr: StmtNode<Expr>;
+def ExpansionGetExpr : StmtNode<Expr>;
 
 // C++ Coroutines expressions
 def CoroutineSuspendExpr : StmtNode<Expr, 1>;

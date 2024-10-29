@@ -20,7 +20,6 @@
 #include "llvm/Support/Compiler.h"
 
 namespace clang {
-
 class VarDecl;
 
 /// CXXCatchStmt - This represents a C++ catch block.
@@ -524,6 +523,71 @@ public:
   }
 };
 
-}  // end namespace clang
+class ExpansionStmt : public Stmt {
+  enum SubStmt {
+    InitStatement,
+    LoopVar,
+    ExpansionInitializer,
+    Pattern,
+    InstantiatedBody,
+    Count,
+  };
+
+  SourceLocation TemplateLoc, ForLoc, ColonLoc, RParenLoc;
+  Stmt *SubStmts[Count];
+
+  friend class ASTStmtReader;
+
+public:
+  ExpansionStmt(SourceLocation TemplateLoc, SourceLocation ForLoc,
+                SourceLocation ColonLoc, SourceLocation RParenLoc,
+                Stmt *InitStatement, Stmt *LoopVar, Stmt *ExpansionInitializer)
+      : Stmt(ExpansionStmtClass), TemplateLoc(TemplateLoc), ForLoc(ForLoc),
+        ColonLoc(ColonLoc), RParenLoc(RParenLoc) {
+    SubStmts[SubStmt::InitStatement] = InitStatement;
+    SubStmts[SubStmt::LoopVar] = LoopVar;
+    SubStmts[SubStmt::ExpansionInitializer] = ExpansionInitializer;
+    SubStmts[SubStmt::Pattern] = nullptr;
+    SubStmts[SubStmt::InstantiatedBody] = nullptr;
+  }
+
+  ExpansionStmt(EmptyShell) : ExpansionStmt({}, {}, {}, {}, {}, {}, {}) {}
+
+  Stmt *getPattern() const { return SubStmts[Pattern]; }
+  Stmt *getInstantiatedBody() const { return SubStmts[InstantiatedBody]; }
+  Stmt *getInitStatement() const { return SubStmts[InitStatement]; }
+  Stmt *getLoopVar() const { return SubStmts[LoopVar]; }
+  Stmt *getExpansionInitializer() const {
+    return SubStmts[ExpansionInitializer];
+  }
+
+  void setPattern(Stmt *S) { SubStmts[Pattern] = S; }
+  void setInstantiatedBody(Stmt *S) { SubStmts[InstantiatedBody] = S; }
+
+  SourceLocation getTemplateLoc() const { return TemplateLoc; }
+  SourceLocation getForLoc() const { return ForLoc; }
+  SourceLocation getColonLoc() const { return ColonLoc; }
+  SourceLocation getRParenLoc() const { return RParenLoc; }
+
+  SourceLocation getBeginLoc() const LLVM_READONLY { return TemplateLoc; }
+  SourceLocation getEndLoc() const LLVM_READONLY {
+    return SubStmts[ExpansionInitializer]->getEndLoc();
+  }
+
+  SourceRange getSourceRange() const LLVM_READONLY {
+    return SourceRange(TemplateLoc, RParenLoc);
+  }
+
+  child_range children() { return child_range{SubStmts, SubStmts + Count}; }
+  const_child_range children() const {
+    return const_child_range(SubStmts, SubStmts + Count);
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == ExpansionStmtClass;
+  }
+};
+
+} // end namespace clang
 
 #endif

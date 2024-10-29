@@ -2499,6 +2499,19 @@ void StmtProfiler::VisitTemplateArgument(const TemplateArgument &Arg) {
   }
 }
 
+void StmtProfiler::VisitExpansionStmt(const ExpansionStmt *ES) {
+  VisitStmt(ES->getPattern());
+  if (ES->getInstantiatedBody())
+    VisitStmt(ES->getInstantiatedBody());
+  if (ES->getInitStatement())
+    VisitStmt(ES->getInitStatement());
+  VisitStmt(ES->getLoopVar());
+  VisitStmt(ES->getExpansionInitializer());
+}
+
+// These don't really have state and are only used as placeholders.
+void StmtProfiler::VisitExpansionGetExpr(const ExpansionGetExpr *) {}
+
 namespace {
 class OpenACCClauseProfiler
     : public OpenACCClauseVisitor<OpenACCClauseProfiler> {

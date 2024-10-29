@@ -1865,6 +1865,8 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::SwitchStmtClass:
     case Stmt::WhileStmtClass:
     case Expr::MSDependentExistsStmtClass:
+    case Expr::ExpansionStmtClass:
+    case Expr::ExpansionGetExprClass:
       llvm_unreachable("Stmt should not be in analyzer evaluation loop");
     case Stmt::ImplicitValueInitExprClass:
       // These nodes are shared in the CFG and would case caching out.

@@ -502,6 +502,14 @@ def warn_cxx23_compat_decl_attrs_on_binding : Warning<
   "is incompatible with C++ standards before C++2c">,
   InGroup<CXXPre26Compat>, DefaultIgnore;
 
+// C++26 Expansion Statements
+def ext_cxx_expansion_stmt : ExtWarn<"expansion statements are a C++26 extension">,
+  InGroup<CXX26>;
+def warn_cxx23_compat_expansion_stmt : Warning<
+  "expansion statements are incompatible with C++ standards before C++26">,
+  DefaultIgnore, InGroup<CXXPre26Compat>;
+def err_expansion_statement_missing_range : Error<"expansion statement requires a range-based condition">;
+
 /// Objective-C parser diagnostics
 def err_expected_minus_or_plus : Error<
   "method type specifier must start with '-' or '+'">;

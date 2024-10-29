@@ -10890,6 +10890,14 @@ public:
                                            SourceLocation Loc,
                                            unsigned NumParams);
 
+  StmtResult ActOnExpansionStmt(SourceLocation TemplateLoc,
+                                SourceLocation ForLoc, Stmt *InitStmt,
+                                Stmt *RangeDecl, SourceLocation ColonLoc,
+                                Expr *ExpansionInitializer,
+                                SourceLocation RParenLoc);
+
+  StmtResult FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body);
+
 private:
   /// Check whether the given statement can have musttail applied to it,
   /// issuing a diagnostic and returning false if not.

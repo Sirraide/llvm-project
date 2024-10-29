@@ -16920,6 +16920,18 @@ TreeTransform<Derived>::TransformCapturedStmt(CapturedStmt *S) {
 }
 
 template <typename Derived>
+StmtResult TreeTransform<Derived>::TransformExpansionStmt(ExpansionStmt *) {
+  assert(false && "TODO");
+}
+
+template <typename Derived>
+ExprResult
+TreeTransform<Derived>::TransformExpansionGetExpr(ExpansionGetExpr *E) {
+  assert(E->Value && "value not set during expansion?");
+  return getDerived().TransformExpr(E->Value);
+}
+
+template <typename Derived>
 ExprResult TreeTransform<Derived>::TransformHLSLOutArgExpr(HLSLOutArgExpr *E) {
   // We can transform the base expression and allow argument resolution to fill
   // in the rest.

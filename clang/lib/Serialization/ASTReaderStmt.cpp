@@ -2364,6 +2364,14 @@ void ASTStmtReader::VisitSEHTryStmt(SEHTryStmt *S) {
   S->Children[SEHTryStmt::HANDLER] = Record.readSubStmt();
 }
 
+void ASTStmtReader::VisitExpansionStmt(ExpansionStmt *) {
+  assert(false && "TODO");
+}
+
+void ASTStmtReader::VisitExpansionGetExpr(ExpansionGetExpr *) {
+  assert(false && "TODO");
+}
+
 //===----------------------------------------------------------------------===//
 // CUDA Expressions and Statements
 //===----------------------------------------------------------------------===//

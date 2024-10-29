@@ -301,6 +301,9 @@ Retry:
   }
 
   case tok::kw_template: {
+    if (NextToken().is(tok::kw_for))
+      return ParseForStatement(TrailingElseLoc);
+
     SourceLocation DeclEnd;
     ParsedAttributes Attrs(AttrFactory);
     ParseTemplateDeclarationOrSpecialization(DeclaratorContext::Block, DeclEnd,
@@ -1998,7 +2001,7 @@ bool Parser::isForRangeIdentifier() {
   return false;
 }
 
-/// ParseForStatement
+/// ParseForStatement - Parse for-statement and expansion-statement.
 ///       for-statement: [C99 6.8.5.3]
 ///         'for' '(' expr[opt] ';' expr[opt] ';' expr[opt] ')' statement
 ///         'for' '(' declaration expr[opt] ';' expr[opt] ')' statement
@@ -2011,6 +2014,10 @@ bool Parser::isForRangeIdentifier() {
 /// [OBJC2] 'for' '(' declaration 'in' expr ')' statement
 /// [OBJC2] 'for' '(' expr 'in' expr ')' statement
 ///
+/// [C++26] expansion-statement:
+///           'template' 'for' '(' init-statement[opt] for-range-declaration ':'
+///               expansion-initializer ')' statement
+///
 /// [C++] for-init-statement:
 /// [C++]   expression-statement
 /// [C++]   simple-declaration
@@ -2021,7 +2028,20 @@ bool Parser::isForRangeIdentifier() {
 /// [C++0x] for-range-initializer:
 /// [C++0x]   expression
 /// [C++0x]   braced-init-list            [TODO]
+///
+/// [C++26] expansion-initializer:
+/// [C++26]   expression
+/// [C++26]   expression-init-list
+/// [C++26] expansion-init-list:
+/// [C++26]   '{' expression-list '}'
 StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
+  SourceLocation TemplateLoc;
+  if (TryConsumeToken(tok::kw_template, TemplateLoc))
+    Diag(TemplateLoc, getLangOpts().CPlusPlus26
+                          ? diag::warn_cxx23_compat_expansion_stmt
+                          : diag::ext_cxx_expansion_stmt)
+        << SourceRange(TemplateLoc, Tok.getLocation());
+
   assert(Tok.is(tok::kw_for) && "Not a for stmt!");
   SourceLocation ForLoc = ConsumeToken();  // eat the 'for'.
 
@@ -2314,23 +2334,35 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
     Diag(CoawaitLoc, diag::warn_deprecated_for_co_await);
 
   // We need to perform most of the semantic analysis for a C++0x for-range
-  // statememt before parsing the body, in order to be able to deduce the type
+  // statement before parsing the body, in order to be able to deduce the type
   // of an auto-typed loop variable.
-  StmtResult ForRangeStmt;
-  StmtResult ForEachStmt;
+  StmtResult ForStmt;
 
-  if (ForRangeInfo.ParsedForRangeDecl()) {
-    ExprResult CorrectedRange =
+  if (ForRangeInfo.ParsedForRangeDecl())
+    ForRangeInfo.RangeExpr =
         Actions.CorrectDelayedTyposInExpr(ForRangeInfo.RangeExpr.get());
-    ForRangeStmt = Actions.ActOnCXXForRangeStmt(
+
+  if (TemplateLoc.isValid()) {
+    if (!ForRangeInfo.ParsedForRangeDecl()) {
+      Diag(TemplateLoc, diag::err_expansion_statement_missing_range);
+      SkipUntil(tok::semi);
+      return StmtError();
+    }
+
+    ForStmt = Actions.ActOnExpansionStmt(
+        TemplateLoc, ForLoc, FirstPart.get(), ForRangeInfo.LoopVar.get(),
+        ForRangeInfo.ColonLoc, ForRangeInfo.RangeExpr.get(),
+        T.getCloseLocation());
+  } else if (ForRangeInfo.ParsedForRangeDecl()) {
+    ForStmt = Actions.ActOnCXXForRangeStmt(
         getCurScope(), ForLoc, CoawaitLoc, FirstPart.get(),
-        ForRangeInfo.LoopVar.get(), ForRangeInfo.ColonLoc, CorrectedRange.get(),
-        T.getCloseLocation(), Sema::BFRK_Build,
+        ForRangeInfo.LoopVar.get(), ForRangeInfo.ColonLoc,
+        ForRangeInfo.RangeExpr.get(), T.getCloseLocation(), Sema::BFRK_Build,
         ForRangeInfo.LifetimeExtendTemps);
   } else if (ForEach) {
     // Similarly, we need to do the semantic analysis for a for-range
     // statement immediately in order to close over temporaries correctly.
-    ForEachStmt = Actions.ObjC().ActOnObjCForCollectionStmt(
+    ForStmt = Actions.ObjC().ActOnObjCForCollectionStmt(
         ForLoc, FirstPart.get(), Collection.get(), T.getCloseLocation());
   } else {
     // In OpenMP loop region loop control variable must be captured and be
@@ -2386,11 +2418,14 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
     return StmtError();
 
   if (ForEach)
-    return Actions.ObjC().FinishObjCForCollectionStmt(ForEachStmt.get(),
+    return Actions.ObjC().FinishObjCForCollectionStmt(ForStmt.get(),
                                                       Body.get());
 
+  if (TemplateLoc.isValid())
+    return Actions.FinishExpansionStmt(ForStmt.get(), Body.get());
+
   if (ForRangeInfo.ParsedForRangeDecl())
-    return Actions.FinishCXXForRangeStmt(ForRangeStmt.get(), Body.get());
+    return Actions.FinishCXXForRangeStmt(ForStmt.get(), Body.get());
 
   return Actions.ActOnForStmt(ForLoc, T.getOpenLocation(), FirstPart.get(),
                               SecondPart, ThirdPart, T.getCloseLocation(),

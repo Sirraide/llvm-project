@@ -38,6 +38,7 @@
 #include "clang/Sema/SemaInternal.h"
 #include "clang/Sema/SemaObjC.h"
 #include "clang/Sema/SemaOpenMP.h"
+#include "clang/Sema/Template.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
@@ -2342,6 +2343,27 @@ static bool ObjCEnumerationCollection(Expr *Collection) {
           && Collection->getType()->getAs<ObjCObjectPointerType>() != nullptr;
 }
 
+static bool CheckForRangeLoopVarAndRange(Sema &S, Stmt *First, Expr *Range) {
+  auto *DS = dyn_cast<DeclStmt>(First);
+  assert(DS && "first part of for range not a decl stmt");
+
+  if (!DS->isSingleDecl()) {
+    S.Diag(DS->getBeginLoc(), diag::err_type_defined_in_for_range);
+    return true;
+  }
+
+  // This function is responsible for attaching an initializer to LoopVar. We
+  // must call ActOnInitializerError if we fail to do so.
+  Decl *LoopVar = DS->getSingleDecl();
+  if (LoopVar->isInvalidDecl() || !Range ||
+      S.DiagnoseUnexpandedParameterPack(Range, Sema::UPPC_Expression)) {
+    S.ActOnInitializerError(LoopVar);
+    return true;
+  }
+
+  return false;
+}
+
 StmtResult Sema::ActOnCXXForRangeStmt(
     Scope *S, SourceLocation ForLoc, SourceLocation CoawaitLoc, Stmt *InitStmt,
     Stmt *First, SourceLocation ColonLoc, Expr *Range, SourceLocation RParenLoc,
@@ -2359,25 +2381,12 @@ StmtResult Sema::ActOnCXXForRangeStmt(
     return ObjC().ActOnObjCForCollectionStmt(ForLoc, First, Range, RParenLoc);
   }
 
-  DeclStmt *DS = dyn_cast<DeclStmt>(First);
-  assert(DS && "first part of for range not a decl stmt");
-
-  if (!DS->isSingleDecl()) {
-    Diag(DS->getBeginLoc(), diag::err_type_defined_in_for_range);
+  if (CheckForRangeLoopVarAndRange(*this, First, Range))
     return StmtError();
-  }
-
-  // This function is responsible for attaching an initializer to LoopVar. We
-  // must call ActOnInitializerError if we fail to do so.
-  Decl *LoopVar = DS->getSingleDecl();
-  if (LoopVar->isInvalidDecl() || !Range ||
-      DiagnoseUnexpandedParameterPack(Range, UPPC_Expression)) {
-    ActOnInitializerError(LoopVar);
-    return StmtError();
-  }
 
   // Build the coroutine state immediately and not later during template
   // instantiation
+  Decl *LoopVar = cast<DeclStmt>(First)->getSingleDecl();
   if (!CoawaitLoc.isInvalid()) {
     if (!ActOnCoroutineBodyStart(S, CoawaitLoc, "co_await")) {
       ActOnInitializerError(LoopVar);
@@ -2410,7 +2419,7 @@ StmtResult Sema::ActOnCXXForRangeStmt(
   StmtResult R = BuildCXXForRangeStmt(
       ForLoc, CoawaitLoc, InitStmt, ColonLoc, RangeDecl.get(),
       /*BeginStmt=*/nullptr, /*EndStmt=*/nullptr,
-      /*Cond=*/nullptr, /*Inc=*/nullptr, DS, RParenLoc, Kind,
+      /*Cond=*/nullptr, /*Inc=*/nullptr, First, RParenLoc, Kind,
       LifetimeExtendTemps);
   if (R.isInvalid()) {
     ActOnInitializerError(LoopVar);
@@ -4615,4 +4624,90 @@ StmtResult Sema::ActOnCapturedRegionEnd(Stmt *S) {
   RD->completeDefinition();
 
   return Res;
+}
+
+StmtResult Sema::ActOnExpansionStmt(SourceLocation TemplateLoc,
+                                    SourceLocation ForLoc, Stmt *InitStmt,
+                                    Stmt *RangeDecl, SourceLocation ColonLoc,
+                                    Expr *ExpansionInitializer,
+                                    SourceLocation RParenLoc) {
+  if (!RangeDecl || !ExpansionInitializer ||
+      CheckForRangeLoopVarAndRange(*this, RangeDecl, ExpansionInitializer))
+    return StmtError();
+
+  if (ExpansionInitializer->isTypeDependent() ||
+      ExpansionInitializer->isValueDependent()) {
+    Diag(TemplateLoc, Diags.getCustomDiagID(
+                          DiagnosticsEngine::Error,
+                          "TODO: Handle dependent expansion initialisers"));
+    return StmtError();
+  }
+
+  if (not isa<InitListExpr>(ExpansionInitializer)) {
+    Diag(TemplateLoc, Diags.getCustomDiagID(
+                          DiagnosticsEngine::Error,
+                          "TODO: Handle non-init-list expansion initialisers"));
+    return StmtError();
+  }
+
+  // FIXME: We need to make sure that DREs that refer to this var decl
+  // point to the instantiated declaration instead. Making the var decl
+  // type-dependent or sth like that should be enough (add an extra bit
+  // that stores whether it is the variable of an expansion statement)?
+  Decl *Var = cast<DeclStmt>(RangeDecl)->getSingleDecl();
+  cast<VarDecl>(Var)->setInit(new (Context)
+                                  ExpansionGetExpr(Context.DependentTy));
+
+  return new (Context) ExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc,
+                                     InitStmt, RangeDecl, ExpansionInitializer);
+}
+
+StmtResult Sema::FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body) {
+  if (!ExpansionStatement || !Body)
+    return StmtError();
+
+  auto *ES = cast<ExpansionStmt>(ExpansionStatement);
+  ES->setPattern(Body);
+  DiagnoseEmptyStmtBody(ES->getRParenLoc(), Body,
+                        diag::warn_empty_range_based_for_body);
+
+  // Initialiser is an init-list. Expand this to:
+  // {
+  //    init-stmt;
+  //    { // For each expr E in the expansion initializer.
+  //      range-decl = E;
+  //      statement;
+  //    }
+  // }
+  //
+  auto *InitStmt = ES->getInitStatement();
+  auto *ExpansionInitializer = ES->getExpansionInitializer();
+  SmallVector<Stmt *> Stmts;
+  if (InitStmt)
+    Stmts.push_back(InitStmt);
+
+  auto *ILE = cast<InitListExpr>(ExpansionInitializer);
+  assert(ILE->isSyntacticForm() &&
+         "init list should still be in syntactic form");
+
+  auto *Var = cast<DeclStmt>(ES->getLoopVar())->getSingleDecl();
+  auto *GetExpr = cast<ExpansionGetExpr>(cast<VarDecl>(Var)->getInit());
+  auto *BodyPattern = CompoundStmt::Create(
+      Context, {ES->getLoopVar(), ES->getPattern()}, FPOptionsOverride(),
+      SourceLocation(), SourceLocation());
+
+  for (auto *E : ILE->inits()) {
+    GetExpr->Value = E;
+    LocalInstantiationScope Scope(*this);
+    MultiLevelTemplateArgumentList MLTAL;
+    InstantiatingTemplate Inst(*this, Body->getBeginLoc(), nullptr);
+    StmtResult Res = SubstStmt(BodyPattern, MLTAL);
+    if (!Res.isUsable())
+      return StmtError();
+    Stmts.push_back(Res.get());
+  }
+
+  ES->setInstantiatedBody(CompoundStmt::Create(
+      Context, Stmts, FPOptionsOverride(), SourceLocation(), SourceLocation()));
+  return ES;
 }

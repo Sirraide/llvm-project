@@ -2987,6 +2987,20 @@ DEF_TRAVERSE_STMT(RequiresExpr, {
     TRY_TO(TraverseConceptRequirement(Req));
 })
 
+DEF_TRAVERSE_STMT(ExpansionStmt, {
+  if (S->getInitStatement())
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getInitStatement());
+  TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getLoopVar());
+  TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getExpansionInitializer());
+  TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getPattern());
+  if (getDerived().shouldVisitImplicitCode() &&
+      getDerived().shouldVisitTemplateInstantiations() &&
+      S->getInstantiatedBody())
+    TRY_TO_TRAVERSE_OR_ENQUEUE_STMT(S->getInstantiatedBody());
+})
+
+DEF_TRAVERSE_STMT(ExpansionGetExpr, {})
+
 // These literals (all of them) do not need any action.
 DEF_TRAVERSE_STMT(IntegerLiteral, {})
 DEF_TRAVERSE_STMT(FixedPointLiteral, {})

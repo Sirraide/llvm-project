@@ -5315,6 +5315,45 @@ public:
   }
 };
 
+/// A placeholder expression created by Sema to be replaced
+/// with a get-expr of an expansion statement during instantiation
+/// of the instantiation of the expansion statement.
+///
+/// For instance, if the expansion statement's initialiser is
+/// an InitListExpr, the get-expr will be replaced with the n-th
+/// element of the InitListExpr.
+///
+/// This expression is never spelled in source and is also never
+/// serialised since every variable of an expansion statement
+/// always has one of these, and its type is always dependent.
+class ExpansionGetExpr : public Expr {
+public:
+  /// The expression we should replace this with. Only valid during
+  /// instantiation.
+  Expr *Value = nullptr;
+
+  ExpansionGetExpr(QualType T)
+      : Expr(ExpansionGetExprClass, T, VK_PRValue, OK_Ordinary) {
+    setDependence(ExprDependence::TypeValueInstantiation);
+  }
+
+  SourceLocation getBeginLoc() const LLVM_READONLY { return SourceLocation(); }
+  SourceLocation getEndLoc() const LLVM_READONLY { return SourceLocation(); }
+  SourceRange getSourceRange() const LLVM_READONLY { return SourceRange(); }
+
+  child_range children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
+  static bool classof(const Stmt *T) {
+    return T->getStmtClass() == ExpansionGetExprClass;
+  }
+};
+
 } // namespace clang
 
 #endif // LLVM_CLANG_AST_EXPRCXX_H

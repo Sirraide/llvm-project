@@ -2643,6 +2643,25 @@ void StmtPrinter::VisitCoyieldExpr(CoyieldExpr *S) {
   PrintExpr(S->getOperand());
 }
 
+void StmtPrinter::VisitExpansionStmt(ExpansionStmt *ES) {
+  Indent() << "template for (";
+  if (ES->getInitStatement())
+    PrintInitStmt(ES->getInitStatement(), 14);
+  PrintingPolicy SubPolicy(Policy);
+  SubPolicy.SuppressInitializers = true;
+  cast<DeclStmt>(ES->getLoopVar())
+      ->getSingleDecl()
+      ->print(OS, SubPolicy, IndentLevel);
+  OS << " : ";
+  PrintStmt(ES->getExpansionInitializer());
+  OS << ")";
+  PrintControlledStmt(ES->getPattern());
+}
+
+void StmtPrinter::VisitExpansionGetExpr(ExpansionGetExpr *) {
+  OS << "__clang_expansion__";
+}
+
 // Obj-C
 
 void StmtPrinter::VisitObjCStringLiteral(ObjCStringLiteral *Node) {
