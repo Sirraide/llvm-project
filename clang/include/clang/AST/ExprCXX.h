@@ -5327,14 +5327,35 @@ public:
 /// serialised since every variable of an expansion statement
 /// always has one of these, and its type is always dependent.
 class ExpansionGetExpr : public Expr {
-public:
   /// The expression we should replace this with. Only valid during
   /// instantiation.
   Expr *Value = nullptr;
 
+public:
+  class ExpandTo {
+    ExpansionGetExpr &E;
+
+  public:
+    ExpandTo(ExpansionGetExpr *E, Expr *Value) : E(*E) {
+      assert(E->Value == nullptr && "Value already set");
+      E->Value = Value;
+    }
+    ~ExpandTo() { E.Value = nullptr; }
+  };
+
   ExpansionGetExpr(QualType T)
       : Expr(ExpansionGetExprClass, T, VK_PRValue, OK_Ordinary) {
     setDependence(ExprDependence::TypeValueInstantiation);
+  }
+
+  /// Whether this expression is part of an expansion statement
+  /// that is currently undergoing expansion.
+  bool isBeingExpanded() const { return Value != nullptr; }
+
+  /// Get the expression that this should expand to.
+  Expr *getExpansion() const {
+    assert(isBeingExpanded() && "ExpansionGetExpr is not being expanded");
+    return Value;
   }
 
   SourceLocation getBeginLoc() const LLVM_READONLY { return SourceLocation(); }

@@ -4697,7 +4697,7 @@ StmtResult Sema::FinishExpansionStmt(Stmt *ExpansionStatement, Stmt *Body) {
       SourceLocation(), SourceLocation());
 
   for (auto *E : ILE->inits()) {
-    GetExpr->Value = E;
+    ExpansionGetExpr::ExpandTo Expand{GetExpr, E};
     LocalInstantiationScope Scope(*this);
     MultiLevelTemplateArgumentList MLTAL;
     InstantiatingTemplate Inst(*this, Body->getBeginLoc(), nullptr);

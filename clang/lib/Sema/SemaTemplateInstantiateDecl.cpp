@@ -6191,8 +6191,24 @@ NamedDecl *Sema::FindInstantiatedDecl(SourceLocation Loc, NamedDecl *D,
   if (isa<ParmVarDecl>(D) && !ParentDependsOnArgs &&
       !cast<ParmVarDecl>(D)->getType()->isInstantiationDependentType())
     return D;
+
+  // Whether this is the 'loop variable' of an expansion statement
+  // that is currently being expanded. This is a workaround for the
+  // fact that an expansion statement acts like template but doesn't
+  // have its own DeclContext.
+  auto IsCurrentExpansionLoopVar = [&] {
+    auto *VD = dyn_cast<VarDecl>(D);
+    if (!VD)
+      return false;
+    auto *Init = dyn_cast_if_present<ExpansionGetExpr>(VD->getInit());
+    if (!Init)
+      return false;
+    return Init->isBeingExpanded();
+  };
+
   if (isa<ParmVarDecl>(D) || isa<NonTypeTemplateParmDecl>(D) ||
       isa<TemplateTypeParmDecl>(D) || isa<TemplateTemplateParmDecl>(D) ||
+      IsCurrentExpansionLoopVar() ||
       (ParentDependsOnArgs && (ParentDC->isFunctionOrMethod() ||
                                isa<OMPDeclareReductionDecl>(ParentDC) ||
                                isa<OMPDeclareMapperDecl>(ParentDC))) ||

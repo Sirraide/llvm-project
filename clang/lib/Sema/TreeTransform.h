@@ -16927,8 +16927,7 @@ StmtResult TreeTransform<Derived>::TransformExpansionStmt(ExpansionStmt *) {
 template <typename Derived>
 ExprResult
 TreeTransform<Derived>::TransformExpansionGetExpr(ExpansionGetExpr *E) {
-  assert(E->Value && "value not set during expansion?");
-  return getDerived().TransformExpr(E->Value);
+  return getDerived().TransformExpr(E->getExpansion());
 }
 
 template <typename Derived>
