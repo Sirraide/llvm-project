@@ -986,6 +986,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case LifetimeExtendedTemporary:
     case RequiresExprBody:
     case ImplicitConceptSpecialization:
+    case ExpansionStmtContext:
       // Never looked up by name.
       return 0;
   }
@@ -1361,6 +1362,9 @@ bool DeclContext::isDependentContext() const {
       return getLexicalParent()->isDependentContext();
   }
 
+  if (isa<ExpansionStmtContextDecl>(this))
+    return true;
+
   // FIXME: A variable template is a dependent context, but is not a
   // DeclContext. A context within it (such as a lambda-expression)
   // should be considered dependent.
@@ -1435,6 +1439,7 @@ DeclContext *DeclContext::getPrimaryContext() {
   case Decl::OMPDeclareReduction:
   case Decl::OMPDeclareMapper:
   case Decl::RequiresExprBody:
+  case Decl::ExpansionStmtContext:
     // There is only one DeclContext for these entities.
     return this;
 

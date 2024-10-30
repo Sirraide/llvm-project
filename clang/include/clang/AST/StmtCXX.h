@@ -21,6 +21,7 @@
 
 namespace clang {
 class VarDecl;
+class ExpansionStmtContextDecl;
 
 /// CXXCatchStmt - This represents a C++ catch block.
 ///
@@ -535,15 +536,17 @@ class ExpansionStmt : public Stmt {
 
   SourceLocation TemplateLoc, ForLoc, ColonLoc, RParenLoc;
   Stmt *SubStmts[Count];
+  ExpansionStmtContextDecl* Context;
 
   friend class ASTStmtReader;
 
 public:
   ExpansionStmt(SourceLocation TemplateLoc, SourceLocation ForLoc,
                 SourceLocation ColonLoc, SourceLocation RParenLoc,
-                Stmt *InitStatement, Stmt *LoopVar, Expr *ExpansionInitializer)
+                ExpansionStmtContextDecl *Context, Stmt *InitStatement,
+                Stmt *LoopVar, Expr *ExpansionInitializer)
       : Stmt(ExpansionStmtClass), TemplateLoc(TemplateLoc), ForLoc(ForLoc),
-        ColonLoc(ColonLoc), RParenLoc(RParenLoc) {
+        ColonLoc(ColonLoc), RParenLoc(RParenLoc), Context(Context) {
     SubStmts[SubStmt::InitStatement] = InitStatement;
     SubStmts[SubStmt::LoopVar] = LoopVar;
     SubStmts[SubStmt::ExpansionInitializer] = ExpansionInitializer;
@@ -551,8 +554,9 @@ public:
     SubStmts[SubStmt::InstantiatedBody] = nullptr;
   }
 
-  ExpansionStmt(EmptyShell) : ExpansionStmt({}, {}, {}, {}, {}, {}, {}) {}
+  ExpansionStmt(EmptyShell) : ExpansionStmt({}, {}, {}, {}, {}, {}, {}, {}) {}
 
+  ExpansionStmtContextDecl* getDeclContext() const { return Context; }
   Stmt *getPattern() const { return SubStmts[Pattern]; }
   Stmt *getInstantiatedBody() const { return SubStmts[InstantiatedBody]; }
   Stmt *getInitStatement() const { return SubStmts[InitStatement]; }

@@ -2342,7 +2342,8 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
     ForRangeInfo.RangeExpr =
         Actions.CorrectDelayedTyposInExpr(ForRangeInfo.RangeExpr.get());
 
-  if (TemplateLoc.isValid()) {
+  bool IsExpansionStmt = TemplateLoc.isValid();
+  if (IsExpansionStmt) {
     if (!ForRangeInfo.ParsedForRangeDecl()) {
       Diag(TemplateLoc, diag::err_expansion_statement_missing_range);
       SkipUntil(tok::semi);
@@ -2400,6 +2401,13 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
 
   MisleadingIndentationChecker MIChecker(*this, MSK_for, ForLoc);
 
+  // If we're parsing an expansion statement, enter its DeclContext.
+  bool PushedDeclContext = IsExpansionStmt && ForStmt.isUsable();
+  if (PushedDeclContext) {
+    DeclContext *DC = cast<ExpansionStmt>(ForStmt.get())->getDeclContext();
+    Actions.PushDeclContext(Actions.getCurScope(), DC);
+  }
+
   // Read the body statement.
   StmtResult Body(ParseStatement(TrailingElseLoc));
 
@@ -2411,6 +2419,9 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
 
   getActions().OpenACC().ActOnForStmtEnd(ForLoc, Body);
 
+  if (PushedDeclContext)
+    Actions.PopDeclContext();
+
   // Leave the for-scope.
   ForScope.Exit();
 
@@ -2421,7 +2432,7 @@ StmtResult Parser::ParseForStatement(SourceLocation *TrailingElseLoc) {
     return Actions.ObjC().FinishObjCForCollectionStmt(ForStmt.get(),
                                                       Body.get());
 
-  if (TemplateLoc.isValid())
+  if (IsExpansionStmt)
     return Actions.FinishExpansionStmt(ForStmt.get(), Body.get());
 
   if (ForRangeInfo.ParsedForRangeDecl())

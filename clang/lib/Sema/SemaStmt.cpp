@@ -4656,8 +4656,9 @@ StmtResult Sema::BuildExpansionStmt(SourceLocation TemplateLoc,
                                     SourceLocation RParenLoc, Stmt *InitStmt,
                                     Stmt *LoopVar, Expr *ExpansionInitializer,
                                     Stmt *Pattern, Stmt *InstantiatedBody) {
+  auto *DC = ExpansionStmtContextDecl::Create(Context, CurContext, TemplateLoc);
   auto *ES =
-      new (Context) ExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc,
+      new (Context) ExpansionStmt(TemplateLoc, ForLoc, ColonLoc, RParenLoc, DC,
                                   InitStmt, LoopVar, ExpansionInitializer);
 
   if (Pattern && !InstantiatedBody)

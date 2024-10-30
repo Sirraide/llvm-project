@@ -3613,6 +3613,17 @@ void UnnamedGlobalConstantDecl::printName(llvm::raw_ostream &OS,
   OS << "unnamed-global-constant";
 }
 
+ExpansionStmtContextDecl *
+ExpansionStmtContextDecl::Create(ASTContext &C, DeclContext *DC,
+                                 SourceLocation SLoc) {
+  return new (C, DC) ExpansionStmtContextDecl(DC, SLoc);
+}
+
+ExpansionStmtContextDecl *
+ExpansionStmtContextDecl::CreateDeserialized(ASTContext &C, GlobalDeclID ID) {
+  return new (C, ID) ExpansionStmtContextDecl(nullptr, SourceLocation());
+}
+
 static const char *getAccessName(AccessSpecifier AS) {
   switch (AS) {
     case AS_none:

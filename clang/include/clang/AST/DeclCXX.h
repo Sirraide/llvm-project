@@ -4395,6 +4395,31 @@ public:
   static bool classofKind(Kind K) { return K == Decl::UnnamedGlobalConstant; }
 };
 
+/// One of these is created for each C++26 expansion statement to serve as
+/// its DeclContext. We need it mainly so we know that we're in a dependent
+/// context.
+class ExpansionStmtContextDecl final : public Decl, public DeclContext {
+  ExpansionStmtContextDecl(DeclContext *DC, SourceLocation SLoc)
+      : Decl(ExpansionStmtContext, DC, SLoc),
+        DeclContext(ExpansionStmtContext) {}
+
+public:
+  static ExpansionStmtContextDecl *Create(ASTContext &C, DeclContext *DC,
+                                          SourceLocation SLoc);
+
+  static ExpansionStmtContextDecl *CreateDeserialized(ASTContext &C,
+                                                      GlobalDeclID ID);
+
+  static bool classof(const Decl *D) { return classofKind(D->getKind()); }
+  static bool classofKind(Kind K) { return K == ExpansionStmtContext; }
+  static DeclContext *castToDeclContext(const ExpansionStmtContextDecl *D) {
+    return const_cast<ExpansionStmtContextDecl *>(D);
+  }
+  static ExpansionStmtContextDecl *castFromDeclContext(DeclContext *DC) {
+    return static_cast<ExpansionStmtContextDecl *>(DC);
+  }
+};
+
 /// Insertion operator for diagnostics.  This allows sending an AccessSpecifier
 /// into a diagnostic with <<.
 const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,

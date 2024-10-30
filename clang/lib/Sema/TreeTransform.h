@@ -16944,6 +16944,9 @@ StmtResult TreeTransform<Derived>::TransformExpansionStmt(ExpansionStmt * ES) {
                                              ES->getPattern(), Body.get());
   }
 
+  Sema::ContextRAII EnterDeclContext(SemaRef, ES->getDeclContext(),
+                                     /*NewThisContext=*/false);
+
   // Otherwise, transform the parts and try to expand it.
   StmtResult LoopVar = getDerived().TransformStmt(ES->getLoopVar());
   ExprResult Exp = getDerived().TransformExpr(ES->getExpansionInitializer());

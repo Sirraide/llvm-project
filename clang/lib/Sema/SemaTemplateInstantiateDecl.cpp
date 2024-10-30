@@ -4129,6 +4129,12 @@ TemplateDeclInstantiator::VisitRequiresExprBodyDecl(RequiresExprBodyDecl *D) {
                                       D->getBeginLoc());
 }
 
+Decl *TemplateDeclInstantiator::VisitExpansionStmtContextDecl(
+    ExpansionStmtContextDecl *D) {
+  return ExpansionStmtContextDecl::Create(SemaRef.Context, D->getDeclContext(),
+                                          D->getBeginLoc());
+}
+
 Decl *TemplateDeclInstantiator::VisitDecl(Decl *D) {
   llvm_unreachable("Unexpected decl");
 }
@@ -6196,7 +6202,7 @@ NamedDecl *Sema::FindInstantiatedDecl(SourceLocation Loc, NamedDecl *D,
   // that is currently being expanded. This is a workaround for the
   // fact that an expansion statement acts like template but doesn't
   // have its own DeclContext.
-  auto IsCurrentExpansionLoopVar = [&] {
+  /*auto IsCurrentExpansionLoopVar = [&] {
     auto *VD = dyn_cast<VarDecl>(D);
     if (!VD)
       return false;
@@ -6204,11 +6210,11 @@ NamedDecl *Sema::FindInstantiatedDecl(SourceLocation Loc, NamedDecl *D,
     if (!Init)
       return false;
     return Init->isBeingExpanded();
-  };
+  };*/
 
   if (isa<ParmVarDecl>(D) || isa<NonTypeTemplateParmDecl>(D) ||
       isa<TemplateTypeParmDecl>(D) || isa<TemplateTemplateParmDecl>(D) ||
-      IsCurrentExpansionLoopVar() ||
+  //    IsCurrentExpansionLoopVar() ||
       (ParentDependsOnArgs && (ParentDC->isFunctionOrMethod() ||
                                isa<OMPDeclareReductionDecl>(ParentDC) ||
                                isa<OMPDeclareMapperDecl>(ParentDC))) ||
