@@ -159,6 +159,7 @@ class DefaultRemark { Severity DefaultSeverity = SEV_Remark; }
 include "DiagnosticASTKinds.td"
 include "DiagnosticCommentKinds.td"
 include "DiagnosticCommonKinds.td"
+include "DiagnosticCompatKinds.td"
 include "DiagnosticCrossTUKinds.td"
 include "DiagnosticDriverKinds.td"
 include "DiagnosticFrontendKinds.td"

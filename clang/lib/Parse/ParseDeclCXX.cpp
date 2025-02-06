@@ -3100,7 +3100,7 @@ Parser::DeclGroupPtrTy Parser::ParseCXXClassMemberDeclaration(
   // declarators, so we get them out of the way early here.
   if (DS.isFriendSpecifiedFirst() && Tok.isOneOf(tok::comma, tok::ellipsis)) {
     Diag(Tok.getLocation(), getLangOpts().CPlusPlus26
-                                ? diag::warn_cxx23_variadic_friends
+                                ? diag::warn_compat_variadic_friends
                                 : diag::ext_variadic_friends);
 
     SourceLocation FriendLoc = DS.getFriendSpecLoc();

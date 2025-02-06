@@ -2,15 +2,15 @@
 // RUN: %clang_cc1 -std=c++11 -verify=pre2c -fsyntax-only -Wc++26-extensions %s
 
 struct S {
-  friend int, long, char; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++2c}} \
-                          // pre2c-warning {{variadic 'friend' declarations are a C++2c extension}}
+  friend int, long, char; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++26}} \
+                          // pre2c-warning {{variadic 'friend' declarations are a C++26 extension}}
 };
 
 template <typename ...Types>
 struct TS {
-  friend Types...; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++2c}} \
-                   // pre2c-warning {{variadic 'friend' declarations are a C++2c extension}}
+  friend Types...; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++26}} \
+                   // pre2c-warning {{variadic 'friend' declarations are a C++26 extension}}
 
-  friend int, Types..., Types...; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++2c}} \
-                                  // pre2c-warning {{variadic 'friend' declarations are a C++2c extension}}
+  friend int, Types..., Types...; // compat-warning {{variadic 'friend' declarations are incompatible with C++ standards before C++26}} \
+                                  // pre2c-warning {{variadic 'friend' declarations are a C++26 extension}}
 };

@@ -46,6 +46,7 @@ namespace clang {
       DIAG_SIZE_ANALYSIS      =  100,
       DIAG_SIZE_REFACTORING   = 1000,
       DIAG_SIZE_INSTALLAPI    =  100,
+      DIAG_SIZE_COMPAT        =  200,
     };
     // Start position for diagnostics.
     enum {
@@ -62,7 +63,8 @@ namespace clang {
       DIAG_START_ANALYSIS      = DIAG_START_SEMA          + static_cast<int>(DIAG_SIZE_SEMA),
       DIAG_START_REFACTORING   = DIAG_START_ANALYSIS      + static_cast<int>(DIAG_SIZE_ANALYSIS),
       DIAG_START_INSTALLAPI    = DIAG_START_REFACTORING   + static_cast<int>(DIAG_SIZE_REFACTORING),
-      DIAG_UPPER_LIMIT         = DIAG_START_INSTALLAPI    + static_cast<int>(DIAG_SIZE_INSTALLAPI)
+      DIAG_START_COMPAT        = DIAG_START_INSTALLAPI    + static_cast<int>(DIAG_SIZE_INSTALLAPI),
+      DIAG_UPPER_LIMIT         = DIAG_START_COMPAT        + static_cast<int>(DIAG_SIZE_COMPAT),
     };
 
     class CustomDiagInfo;
@@ -77,7 +79,10 @@ namespace clang {
   ENUM,
 #define COMMONSTART
 #include "clang/Basic/DiagnosticCommonKinds.inc"
-      NUM_BUILTIN_COMMON_DIAGNOSTICS
+      NUM_BUILTIN_COMMON_DIAGNOSTICS,
+#define COMPATSTART
+#include "clang/Basic/DiagnosticCompatKinds.inc"
+      NUM_BUILTIN_COMPAT_DIAGNOSTICS,
 #undef DIAG
     };
 
