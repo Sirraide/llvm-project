@@ -95,7 +95,7 @@ def ext_variadic_templates : ExtWarn<
   "variadic templates are a C++11 extension">, InGroup<CXX11>;
 def warn_cxx98_compat_variadic_templates :
   Warning<"variadic templates are incompatible with C++98">,
-  InGroup<CXX98Compat>, DefaultIgnore;
+  InGroup<CXXPre11Compat>, DefaultIgnore;
 def err_default_special_members : Error<
   "only special member functions %select{|and comparison operators }0"
   "may be defaulted">;
@@ -217,7 +217,7 @@ def ext_cxx11_longlong : Extension<
   InGroup<CXX11LongLong>;
 def warn_cxx98_compat_longlong : Warning<
   "'long long' is incompatible with C++98">,
-  InGroup<CXX98CompatPedantic>, DefaultIgnore;
+  InGroup<CXXPre11CompatPedantic>, DefaultIgnore;
 def ext_cxx23_size_t_suffix : ExtWarn<
   "'size_t' suffix for literals is a C++23 extension">,
   InGroup<CXX23>;

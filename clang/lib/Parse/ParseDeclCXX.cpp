@@ -3100,8 +3100,8 @@ Parser::DeclGroupPtrTy Parser::ParseCXXClassMemberDeclaration(
   // declarators, so we get them out of the way early here.
   if (DS.isFriendSpecifiedFirst() && Tok.isOneOf(tok::comma, tok::ellipsis)) {
     Diag(Tok.getLocation(), getLangOpts().CPlusPlus26
-                                ? diag::warn_compat_variadic_friends
-                                : diag::ext_variadic_friends);
+                                ? diag::warn_compat_cxx26_variadic_friends
+                                : diag::ext_pre_cxx26_variadic_friends);
 
     SourceLocation FriendLoc = DS.getFriendSpecLoc();
     SmallVector<Decl *> Decls;
@@ -4944,8 +4944,8 @@ void Parser::ParseCXX11AttributeSpecifierInternal(ParsedAttributes &Attrs,
 
   SourceLocation OpenLoc = Tok.getLocation();
   if (getLangOpts().CPlusPlus) {
-    Diag(OpenLoc, getLangOpts().CPlusPlus11 ? diag::warn_cxx98_compat_attribute
-                                            : diag::warn_ext_cxx11_attributes);
+    Diag(OpenLoc, getLangOpts().CPlusPlus11 ? diag::warn_compat_cxx11_attribute
+                                            : diag::ext_pre_cxx11_attribute);
   } else {
     Diag(OpenLoc, getLangOpts().C23 ? diag::warn_pre_c23_compat_attributes
                                     : diag::warn_ext_c23_attributes);

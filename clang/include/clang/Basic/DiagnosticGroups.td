@@ -270,12 +270,12 @@ def DeclarationAfterStatement : DiagGroup<"declaration-after-statement">;
 
 def GNUEmptyStruct : DiagGroup<"gnu-empty-struct">;
 def ExtraTokens : DiagGroup<"extra-tokens">;
-def CXX98CompatExtraSemi : DiagGroup<"c++98-compat-extra-semi">;
+def CXXPre11CompatExtraSemi : DiagGroup<"c++98-compat-extra-semi">;
 def CXX11ExtraSemi : DiagGroup<"c++11-extra-semi">;
 def EmptyInitStatement : DiagGroup<"empty-init-stmt">;
 def ExportUnnamed : DiagGroup<"export-unnamed">;
 def ExtraSemiStmt : DiagGroup<"extra-semi-stmt", [EmptyInitStatement]>;
-def ExtraSemi : DiagGroup<"extra-semi", [CXX98CompatExtraSemi,
+def ExtraSemi : DiagGroup<"extra-semi", [CXXPre11CompatExtraSemi,
                                          CXX11ExtraSemi]>;
 
 def GNUFlexibleArrayInitializer : DiagGroup<"gnu-flexible-array-initializer">;
@@ -336,26 +336,26 @@ def CXXPre26CompatPedantic :
 def : DiagGroup<"pre-c++2c-compat", [CXXPre26Compat]>;
 def : DiagGroup<"pre-c++2c-compat-pedantic", [CXXPre26CompatPedantic]>;
 
-def CXX98CompatBindToTemporaryCopy :
+def CXXPre11CompatBindToTemporaryCopy :
   DiagGroup<"c++98-compat-bind-to-temporary-copy">;
-def CXX98CompatLocalTypeTemplateArgs :
+def CXXPre11CompatLocalTypeTemplateArgs :
   DiagGroup<"c++98-compat-local-type-template-args">;
-def CXX98CompatUnnamedTypeTemplateArgs :
+def CXXPre11CompatUnnamedTypeTemplateArgs :
   DiagGroup<"c++98-compat-unnamed-type-template-args">;
 
-def CXX98Compat : DiagGroup<"c++98-compat",
-                            [CXX98CompatLocalTypeTemplateArgs,
-                             CXX98CompatUnnamedTypeTemplateArgs,
+def CXXPre11Compat : DiagGroup<"c++98-compat",
+                            [CXXPre11CompatLocalTypeTemplateArgs,
+                             CXXPre11CompatUnnamedTypeTemplateArgs,
                              CXXPre14Compat,
                              CXXPre17Compat,
                              CXXPre20Compat,
                              CXXPre23Compat,
                              CXXPre26Compat]>;
 // Warnings for C++11 features which are Extensions in C++98 mode.
-def CXX98CompatPedantic : DiagGroup<"c++98-compat-pedantic",
-                                    [CXX98Compat,
-                                     CXX98CompatBindToTemporaryCopy,
-                                     CXX98CompatExtraSemi,
+def CXXPre11CompatPedantic : DiagGroup<"c++98-compat-pedantic",
+                                    [CXXPre11Compat,
+                                     CXXPre11CompatBindToTemporaryCopy,
+                                     CXXPre11CompatExtraSemi,
                                      CXXPre14CompatPedantic,
                                      CXXPre17CompatPedantic,
                                      CXXPre20CompatPedantic,
@@ -520,7 +520,7 @@ def GNULabelsAsValue : DiagGroup<"gnu-label-as-value">;
 def GNULineMarker : DiagGroup<"gnu-line-marker">;
 def LiteralRange : DiagGroup<"literal-range">;
 def LocalTypeTemplateArgs : DiagGroup<"local-type-template-args",
-                                      [CXX98CompatLocalTypeTemplateArgs]>;
+                                      [CXXPre11CompatLocalTypeTemplateArgs]>;
 def RangeLoopConstruct : DiagGroup<"range-loop-construct">;
 def RangeLoopBindReference : DiagGroup<"range-loop-bind-reference">;
 def RangeLoopAnalysis : DiagGroup<"range-loop-analysis",
@@ -654,7 +654,7 @@ def ReturnMismatch : DiagGroup<"return-mismatch">;
 def ReturnType : DiagGroup<"return-type", [ReturnTypeCLinkage, ReturnMismatch]>;
 
 def BindToTemporaryCopy : DiagGroup<"bind-to-temporary-copy",
-                                    [CXX98CompatBindToTemporaryCopy]>;
+                                    [CXXPre11CompatBindToTemporaryCopy]>;
 def SelfAssignmentField : DiagGroup<"self-assign-field">;
 def SelfAssignmentOverloaded : DiagGroup<"self-assign-overloaded">;
 def SelfAssignment : DiagGroup<"self-assign", [SelfAssignmentOverloaded, SelfAssignmentField]>;
@@ -858,7 +858,7 @@ def Attributes : DiagGroup<"attributes", [UnknownAttributes,
                                           IgnoredAttributes]>;
 def UnknownSanitizers : DiagGroup<"unknown-sanitizers">;
 def UnnamedTypeTemplateArgs : DiagGroup<"unnamed-type-template-args",
-                                        [CXX98CompatUnnamedTypeTemplateArgs]>;
+                                        [CXXPre11CompatUnnamedTypeTemplateArgs]>;
 def UnsupportedFriend : DiagGroup<"unsupported-friend">;
 def UnusedArgument : DiagGroup<"unused-argument">;
 def UnusedCommandLineArgument : DiagGroup<"unused-command-line-argument">;
