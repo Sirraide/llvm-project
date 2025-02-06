@@ -12,11 +12,11 @@
 
 // Define a C++ compatibility warning.
 multiclass CXXCompatWarn<string message, int std_ver> {
-    def ext_pre_cxx#std_ver#_#NAME :
+    def compat_pre_cxx#std_ver#_#NAME :
         ExtWarn<!strconcat(message, " a C++", ""#std_ver,  " extension")>,
         InGroup<!cast<DiagGroup>("CXX"#std_ver)>;
 
-    def warn_compat_cxx#std_ver#_#NAME :
+    def compat_cxx#std_ver#_#NAME :
         Warning<!strconcat(message, " incompatible with C++ standards before C++", ""#std_ver)>,
         InGroup<!cast<DiagGroup>("CXXPre"#std_ver#"Compat")>,
         DefaultIgnore;
@@ -32,6 +32,8 @@ let CategoryName = "Compatibility Diagnostic" in {
 // C++11
 //===----------------------------------------------------------------------===//
 defm attribute : CXX11CompatWarn<"[[]] attributes are">;
+defm enum_fixed_underlying_type : CXX11CompatWarn<"enumeration types with a fixed underlying type are">;
+defm enumerator_list_comma : CXX11CompatWarn<"commas at the end of enumerator lists are">; // Note: Was pedantic.
 
 //===----------------------------------------------------------------------===//
 // C++26
