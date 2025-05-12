@@ -772,6 +772,9 @@ void TextDiagnostic::emitFilename(StringRef Filename, const SourceManager &SM) {
     }
   }
 
+  if (Filename.starts_with("/usr/lib/gcc"))
+    Filename = Filename.substr(Filename.find_last_of('/') + 1);
+
   OS << Filename;
 }
 

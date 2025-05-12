@@ -17,6 +17,8 @@
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/raw_ostream.h"
 #include <memory>
 
 namespace clang {
@@ -37,6 +39,15 @@ class TextDiagnosticPrinter : public DiagnosticConsumer {
   LLVM_PREFERRED_TYPE(bool)
   unsigned OwnsOutputStream : 1;
 
+  LLVM_PREFERRED_TYPE(bool)
+  unsigned FirstDiagnostic : 1;
+
+  /// Auxiliary buffer and output stream used for formatting diagnostics before
+  /// they are actually printed.
+  SmallString<2048> DiagBuffer;
+  llvm::raw_svector_ostream DiagStream{DiagBuffer};
+
+
 public:
   TextDiagnosticPrinter(raw_ostream &os, DiagnosticOptions *diags,
                         bool OwnsOutputStream = false);
@@ -51,6 +62,8 @@ public:
   void EndSourceFile() override;
   void HandleDiagnostic(DiagnosticsEngine::Level Level,
                         const Diagnostic &Info) override;
+  void FormatDiagnostic(DiagnosticsEngine::Level Level,
+                        const Diagnostic &Info);
 };
 
 } // end namespace clang

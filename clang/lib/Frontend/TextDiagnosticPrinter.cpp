@@ -19,13 +19,15 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
+#include <llvm/Support/Process.h>
 using namespace clang;
 
 TextDiagnosticPrinter::TextDiagnosticPrinter(raw_ostream &os,
                                              DiagnosticOptions *diags,
                                              bool _OwnsOutputStream)
   : OS(os), DiagOpts(diags),
-    OwnsOutputStream(_OwnsOutputStream) {
+    OwnsOutputStream(_OwnsOutputStream),
+  FirstDiagnostic(true) {
 }
 
 TextDiagnosticPrinter::~TextDiagnosticPrinter() {
@@ -36,7 +38,8 @@ TextDiagnosticPrinter::~TextDiagnosticPrinter() {
 void TextDiagnosticPrinter::BeginSourceFile(const LangOptions &LO,
                                             const Preprocessor *PP) {
   // Build the TextDiagnostic utility.
-  TextDiag.reset(new TextDiagnostic(OS, LO, &*DiagOpts, PP));
+  TextDiag.reset(new TextDiagnostic(DiagStream, LO, &*DiagOpts, PP));
+  DiagStream.enable_colors(DiagOpts->ShowColors);
 }
 
 void TextDiagnosticPrinter::EndSourceFile() {
@@ -110,10 +113,10 @@ static void printDiagnosticOptions(raw_ostream &OS,
     OS << ']';
 }
 
-void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
+void TextDiagnosticPrinter::FormatDiagnostic(DiagnosticsEngine::Level Level,
                                              const Diagnostic &Info) {
-  // Default implementation (Warnings/errors count).
-  DiagnosticConsumer::HandleDiagnostic(Level, Info);
+  assert(DiagOpts && "Unexpected diagnostic without options set");
+  DiagBuffer.clear();
 
   // Render the diagnostic message into a temporary buffer eagerly. We'll use
   // this later as we print out the diagnostic to the terminal.
@@ -127,27 +130,25 @@ void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
   // information (e.g., "foo.c:10:4:") that precedes the error
   // message. We use this information to determine how long the
   // file+line+column number prefix is.
-  uint64_t StartOfLocationInfo = OS.tell();
+  uint64_t StartOfLocationInfo = DiagStream.tell();
 
   if (!Prefix.empty())
-    OS << Prefix << ": ";
+    DiagStream << Prefix << ": ";
 
   // Use a dedicated, simpler path for diagnostics without a valid location.
   // This is important as if the location is missing, we may be emitting
   // diagnostics in a context that lacks language options, a source manager, or
   // other infrastructure necessary when emitting more rich diagnostics.
   if (!Info.getLocation().isValid()) {
-    TextDiagnostic::printDiagnosticLevel(OS, Level, DiagOpts->ShowColors);
+    TextDiagnostic::printDiagnosticLevel(DiagStream, Level, DiagOpts->ShowColors);
     TextDiagnostic::printDiagnosticMessage(
-        OS, /*IsSupplemental=*/Level == DiagnosticsEngine::Note,
-        DiagMessageStream.str(), OS.tell() - StartOfLocationInfo,
+        DiagStream, /*IsSupplemental=*/Level == DiagnosticsEngine::Note,
+        DiagMessageStream.str(), DiagStream.tell() - StartOfLocationInfo,
         DiagOpts->MessageLength, DiagOpts->ShowColors);
-    OS.flush();
     return;
   }
 
   // Assert that the rest of our infrastructure is setup properly.
-  assert(DiagOpts && "Unexpected diagnostic without options set");
   assert(Info.hasSourceManager() &&
          "Unexpected diagnostic with no source manager");
   assert(TextDiag && "Unexpected diagnostic outside source file processing");
@@ -155,6 +156,43 @@ void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
   TextDiag->emitDiagnostic(
       FullSourceLoc(Info.getLocation(), Info.getSourceManager()), Level,
       DiagMessageStream.str(), Info.getRanges(), Info.getFixItHints());
+}
+
+
+void TextDiagnosticPrinter::HandleDiagnostic(DiagnosticsEngine::Level Level,
+                                             const Diagnostic &Info) {
+  // Default implementation (Warnings/errors count).
+  DiagnosticConsumer::HandleDiagnostic(Level, Info);
+
+  llvm::errs() << "COLS:" << std::getenv("COLUMNS") << ":" <<  llvm::sys::Process::StandardErrColumns() << "\n";
+  if (unsigned Cols = llvm::sys::Process::StandardErrColumns(); Cols > 10)
+    DiagOpts->MessageLength = Cols - 6;
+
+  FormatDiagnostic(Level, Info);
+  if (Level != DiagnosticsEngine::Note) {
+    if (FirstDiagnostic)
+      FirstDiagnostic = false;
+    else
+      OS << "\n";
+
+    OS << DiagStream.str();
+  } else {
+    StringRef Diag = DiagStream.str();
+    while (!Diag.empty()) {
+      size_t Offs = Diag.find('\n');
+      if (Offs == StringRef::npos) {
+        OS << Diag;
+        break;
+      }
+
+      // Include the newline here and skip over it.
+      OS.indent(4);
+      OS << Diag.substr(0, Offs + 1);
+      Diag = Diag.substr(Offs + 1);
+    }
+  }
 
   OS.flush();
 }
+
+
