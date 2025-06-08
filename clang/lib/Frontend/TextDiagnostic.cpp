@@ -686,22 +686,20 @@ void TextDiagnostic::emitDiagnosticMessage(
                            NestingLevel);
 
     if (DiagOpts.ShowLocation && Loc.isValid()) {
-      OS << "\n";
-      OS.indent(BaseIndent + 3);
-      OS << "- at ";
-      emitDiagnosticLoc(Loc, PLoc, Level, Ranges);
-      OS.resetColor();
-      OS << "\n";
-
+      OS << '\n';
       for (auto [Loc, PLoc] : IncludeStack) {
         OS.indent(BaseIndent + 3);
         OS << "- included from ";
         emitDiagnosticLoc(Loc, PLoc, Level, /*Ranges=*/{});
         OS.resetColor();
-        OS << "\n";
+        OS << '\n';
       }
 
-      OS << "\n";
+      OS.indent(BaseIndent + 3);
+      OS << "- at ";
+      emitDiagnosticLoc(Loc, PLoc, Level, Ranges);
+      OS.resetColor();
+      OS << "\n\n";
     }
 
     return;
