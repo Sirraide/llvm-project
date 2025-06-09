@@ -70,10 +70,10 @@ static void applyTemplateHighlighting(raw_ostream &OS, StringRef Str,
 }
 
 /// Number of spaces to indent when word-wrapping.
-constexpr unsigned WordWrapIndentation = 6;
+constexpr unsigned WordWrapIndentation = 4;
 
 /// Number of spaces per indent level.
-constexpr unsigned IndentWidth = 8;
+constexpr unsigned IndentWidth = 4;
 
 /// Maximum indentation level.
 constexpr unsigned MaxIndentWidth = 6 * IndentWidth;
