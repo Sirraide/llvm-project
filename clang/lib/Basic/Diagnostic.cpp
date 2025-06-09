@@ -69,7 +69,7 @@ DummyArgToStringFn(DiagnosticsEngine::ArgumentKind AK, intptr_t QT,
                    StringRef Modifier, StringRef Argument,
                    ArrayRef<DiagnosticsEngine::ArgumentValue> PrevArgs,
                    SmallVectorImpl<char> &Output, void *Cookie,
-                   ArrayRef<intptr_t> QualTypeVals) {
+                   ArrayRef<intptr_t> QualTypeVals, bool ShowColors) {
   StringRef Str = "<can't format argument>";
   Output.append(Str.begin(), Str.end());
 }
@@ -1365,10 +1365,10 @@ void Diagnostic::FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
     case DiagnosticsEngine::ak_declcontext:
     case DiagnosticsEngine::ak_attr:
     case DiagnosticsEngine::ak_expr:
-      getDiags()->ConvertArgToString(Kind, getRawArg(ArgNo),
-                                     StringRef(Modifier, ModifierLen),
-                                     StringRef(Argument, ArgumentLen),
-                                     FormattedArgs, OutStr, QualTypeVals);
+      getDiags()->ConvertArgToString(
+          Kind, getRawArg(ArgNo), StringRef(Modifier, ModifierLen),
+          StringRef(Argument, ArgumentLen), FormattedArgs, OutStr, QualTypeVals,
+          getDiags()->ShowColors);
       break;
     case DiagnosticsEngine::ak_qualtype_pair: {
       // Create a struct with all the info needed for printing.
@@ -1388,10 +1388,10 @@ void Diagnostic::FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       if (getDiags()->PrintTemplateTree && Tree.empty()) {
         TDT.PrintFromType = true;
         TDT.PrintTree = true;
-        getDiags()->ConvertArgToString(Kind, val,
-                                       StringRef(Modifier, ModifierLen),
-                                       StringRef(Argument, ArgumentLen),
-                                       FormattedArgs, Tree, QualTypeVals);
+        getDiags()->ConvertArgToString(
+            Kind, val, StringRef(Modifier, ModifierLen),
+            StringRef(Argument, ArgumentLen), FormattedArgs, Tree, QualTypeVals,
+            getDiags()->ShowColors);
         // If there is no tree information, fall back to regular printing.
         if (!Tree.empty()) {
           FormatDiagnostic(Pipe + 1, ArgumentEnd, OutStr);
@@ -1410,10 +1410,10 @@ void Diagnostic::FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
       // Append first type
       TDT.PrintTree = false;
       TDT.PrintFromType = true;
-      getDiags()->ConvertArgToString(Kind, val,
-                                     StringRef(Modifier, ModifierLen),
-                                     StringRef(Argument, ArgumentLen),
-                                     FormattedArgs, OutStr, QualTypeVals);
+      getDiags()->ConvertArgToString(
+          Kind, val, StringRef(Modifier, ModifierLen),
+          StringRef(Argument, ArgumentLen), FormattedArgs, OutStr, QualTypeVals,
+          getDiags()->ShowColors);
       if (!TDT.TemplateDiffUsed)
         FormattedArgs.push_back(
             std::make_pair(DiagnosticsEngine::ak_qualtype, TDT.FromType));
@@ -1423,10 +1423,10 @@ void Diagnostic::FormatDiagnostic(const char *DiagStr, const char *DiagEnd,
 
       // Append second type
       TDT.PrintFromType = false;
-      getDiags()->ConvertArgToString(Kind, val,
-                                     StringRef(Modifier, ModifierLen),
-                                     StringRef(Argument, ArgumentLen),
-                                     FormattedArgs, OutStr, QualTypeVals);
+      getDiags()->ConvertArgToString(
+          Kind, val, StringRef(Modifier, ModifierLen),
+          StringRef(Argument, ArgumentLen), FormattedArgs, OutStr, QualTypeVals,
+          getDiags()->ShowColors);
       if (!TDT.TemplateDiffUsed)
         FormattedArgs.push_back(
             std::make_pair(DiagnosticsEngine::ak_qualtype, TDT.ToType));

@@ -585,7 +585,8 @@ private:
                                    StringRef Modifier, StringRef Argument,
                                    ArrayRef<ArgumentValue> PrevArgs,
                                    SmallVectorImpl<char> &Output, void *Cookie,
-                                   ArrayRef<intptr_t> QualTypeVals);
+                                   ArrayRef<intptr_t> QualTypeVals,
+                                   bool ShowColors);
 
   void *ArgToStringCookie = nullptr;
   ArgToStringFnTy ArgToStringFn;
@@ -934,9 +935,10 @@ public:
   void ConvertArgToString(ArgumentKind Kind, intptr_t Val, StringRef Modifier,
                           StringRef Argument, ArrayRef<ArgumentValue> PrevArgs,
                           SmallVectorImpl<char> &Output,
-                          ArrayRef<intptr_t> QualTypeVals) const {
+                          ArrayRef<intptr_t> QualTypeVals,
+                          bool ShowColors) const {
     ArgToStringFn(Kind, Val, Modifier, Argument, PrevArgs, Output,
-                  ArgToStringCookie, QualTypeVals);
+                  ArgToStringCookie, QualTypeVals, ShowColors);
   }
 
   void SetArgToStringFn(ArgToStringFnTy Fn, void *Cookie) {

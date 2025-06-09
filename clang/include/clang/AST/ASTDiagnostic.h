@@ -31,7 +31,8 @@ namespace clang {
       ArrayRef<DiagnosticsEngine::ArgumentValue> PrevArgs,
       SmallVectorImpl<char> &Output,
       void *Cookie,
-      ArrayRef<intptr_t> QualTypeVals);
+      ArrayRef<intptr_t> QualTypeVals,
+      bool ShowColors);
 
   /// Returns a desugared version of the QualType, and marks ShouldAKA as true
   /// whenever we remove significant sugar from the type. Make sure ShouldAKA
