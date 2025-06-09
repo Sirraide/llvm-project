@@ -367,6 +367,9 @@ void clang::FormatASTNodeDiagnosticArgument(
     bool ShowColors) {
   ASTContext &Context = *static_cast<ASTContext*>(Cookie);
 
+  // FIXME: The colouring here doesn't render properly in some contexts; maybe
+  // think of a different way of adding colours here (possibly in FormatDiagnostic()
+  // instead of here?).
   size_t OldEnd = Output.size();
   llvm::raw_svector_ostream OS(Output);
   OS.enable_colors(ShowColors);
