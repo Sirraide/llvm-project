@@ -688,14 +688,14 @@ void TextDiagnostic::emitDiagnosticMessage(
     if (DiagOpts.ShowLocation && Loc.isValid()) {
       OS << '\n';
       for (auto [Loc, PLoc] : IncludeStack) {
-        OS.indent(BaseIndent + 3);
+        OS.indent(BaseIndent + 6);
         OS << "- included from ";
         emitDiagnosticLoc(Loc, PLoc, Level, /*Ranges=*/{});
         OS.resetColor();
         OS << '\n';
       }
 
-      OS.indent(BaseIndent + 3);
+      OS.indent(BaseIndent + 6);
       OS << "- at ";
       emitDiagnosticLoc(Loc, PLoc, Level, Ranges);
       OS.resetColor();
