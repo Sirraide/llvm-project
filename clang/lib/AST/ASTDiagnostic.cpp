@@ -260,10 +260,12 @@ break; \
 /// \param Ty the type to print
 /// \param QualTypeVals pointer values to QualTypes which are used in the
 /// diagnostic message
-static std::string
-ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
-                            ArrayRef<DiagnosticsEngine::ArgumentValue> PrevArgs,
-                            ArrayRef<intptr_t> QualTypeVals) {
+static void ConvertTypeToDiagnosticString(
+    raw_ostream &OS, ASTContext &Context, QualType Ty,
+    ArrayRef<DiagnosticsEngine::ArgumentValue> PrevArgs,
+    ArrayRef<intptr_t> QualTypeVals) {
+  StringRef ToggleColor = OS.colors_enabled() ? ToggleHighlight : "";
+
   // FIXME: Playing with std::string is really slow.
   bool ForceAKA = false;
   QualType CanTy = Ty.getCanonicalType();
@@ -325,8 +327,9 @@ ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
       }
       std::string akaStr = DesugaredTy.getAsString(Context.getPrintingPolicy());
       if (akaStr != S) {
-        S = "'" + S + "' (aka '" + akaStr + "')";
-        return S;
+        OS << "'" << ToggleColor << S << ToggleColor;
+        OS << "' (aka '" << ToggleColor << akaStr << ToggleColor << "')";
+        return;
       }
     }
 
@@ -334,18 +337,15 @@ ConvertTypeToDiagnosticString(ASTContext &Context, QualType Ty,
     // or displaying complex __attribute__ expressions so add details of the
     // type and element count.
     if (const auto *VTy = Ty->getAs<VectorType>()) {
-      std::string DecoratedString;
-      llvm::raw_string_ostream OS(DecoratedString);
       const char *Values = VTy->getNumElements() > 1 ? "values" : "value";
       OS << "'" << S << "' (vector of " << VTy->getNumElements() << " '"
          << VTy->getElementType().getAsString(Context.getPrintingPolicy())
          << "' " << Values << ")";
-      return DecoratedString;
+      return;
     }
   }
 
-  S = "'" + S + "'";
-  return S;
+  OS << "'" << ToggleColor << S << ToggleColor << "'";
 }
 
 static bool FormatTemplateTypeDiff(ASTContext &Context, QualType FromType,
@@ -361,7 +361,8 @@ void clang::FormatASTNodeDiagnosticArgument(
     ArrayRef<DiagnosticsEngine::ArgumentValue> PrevArgs,
     SmallVectorImpl<char> &Output,
     void *Cookie,
-    ArrayRef<intptr_t> QualTypeVals) {
+    ArrayRef<intptr_t> QualTypeVals,
+    bool UseColor) {
   ASTContext &Context = *static_cast<ASTContext*>(Cookie);
 
   size_t OldEnd = Output.size();
@@ -432,7 +433,7 @@ void clang::FormatASTNodeDiagnosticArgument(
              "Invalid modifier for QualType argument");
 
       QualType Ty(QualType::getFromOpaquePtr(reinterpret_cast<void*>(Val)));
-      OS << ConvertTypeToDiagnosticString(Context, Ty, PrevArgs, QualTypeVals);
+      ConvertTypeToDiagnosticString(OS, Context, Ty, PrevArgs, QualTypeVals);
       NeedQuotes = false;
       break;
     }
@@ -484,9 +485,8 @@ void clang::FormatASTNodeDiagnosticArgument(
       } else if (isLambdaCallOperator(DC)) {
         OS << "lambda expression";
       } else if (TypeDecl *Type = dyn_cast<TypeDecl>(DC)) {
-        OS << ConvertTypeToDiagnosticString(Context,
-                                            Context.getTypeDeclType(Type),
-                                            PrevArgs, QualTypeVals);
+        ConvertTypeToDiagnosticString(
+            OS, Context, Context.getTypeDeclType(Type), PrevArgs, QualTypeVals);
       } else {
         assert(isa<NamedDecl>(DC) && "Expected a NamedDecl");
         NamedDecl *ND = cast<NamedDecl>(DC);

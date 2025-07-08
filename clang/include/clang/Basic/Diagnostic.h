@@ -561,7 +561,8 @@ private:
                                    StringRef Modifier, StringRef Argument,
                                    ArrayRef<ArgumentValue> PrevArgs,
                                    SmallVectorImpl<char> &Output, void *Cookie,
-                                   ArrayRef<intptr_t> QualTypeVals);
+                                   ArrayRef<intptr_t> QualTypeVals,
+                                   bool UseColor);
 
   void *ArgToStringCookie = nullptr;
   ArgToStringFnTy ArgToStringFn;
@@ -904,9 +905,10 @@ public:
   void ConvertArgToString(ArgumentKind Kind, intptr_t Val, StringRef Modifier,
                           StringRef Argument, ArrayRef<ArgumentValue> PrevArgs,
                           SmallVectorImpl<char> &Output,
-                          ArrayRef<intptr_t> QualTypeVals) const {
+                          ArrayRef<intptr_t> QualTypeVals,
+                          bool UseColor = false) const {
     ArgToStringFn(Kind, Val, Modifier, Argument, PrevArgs, Output,
-                  ArgToStringCookie, QualTypeVals);
+                  ArgToStringCookie, QualTypeVals, UseColor);
   }
 
   void SetArgToStringFn(ArgToStringFnTy Fn, void *Cookie) {
@@ -1808,16 +1810,31 @@ struct TemplateDiffTypes {
   unsigned TemplateDiffUsed : 1;
 };
 
+/// Enum that controls how ANSI color escape codes are handled in strings.
+enum class ColorEscapeMode {
+  /// Escape them and print them as UTF codepoints. E.g. '\033[0;32mX' would
+  /// be printed as '<U+001B>[0;32mX'.
+  Literal,
+
+  /// Strip them. E.g. '\033[0;32mX' would be printed as 'X'.
+  Strip,
+
+  /// Keep them. E.g. 'E.g. '\033[0;32mX' would be printed as a green 'X'.
+  Keep,
+};
+
 /// Special character that the diagnostic printer will use to toggle the bold
 /// attribute.  The character itself will be not be printed.
-const char ToggleHighlight = 127;
+constexpr StringRef ToggleHighlight = "\x7F";
 
 /// ProcessWarningOptions - Initialize the diagnostic client and process the
 /// warning options specified on the command line.
 void ProcessWarningOptions(DiagnosticsEngine &Diags,
                            const DiagnosticOptions &Opts,
                            llvm::vfs::FileSystem &VFS, bool ReportDiags = true);
-void EscapeStringForDiagnostic(StringRef Str, SmallVectorImpl<char> &OutStr);
+void EscapeStringForDiagnostic(
+    StringRef Str, SmallVectorImpl<char> &OutStr,
+    ColorEscapeMode ColorMode = ColorEscapeMode::Literal);
 } // namespace clang
 
 #endif // LLVM_CLANG_BASIC_DIAGNOSTIC_H
