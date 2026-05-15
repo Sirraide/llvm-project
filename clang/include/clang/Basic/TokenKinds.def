@@ -901,6 +901,9 @@ ANNOTATION(decltype)     // annotation for a decltype expression,
                          // e.g., "decltype(foo.bar())"
 ANNOTATION(pack_indexing_type) // annotation for an indexed pack of type,
                               // e.g., "T...[expr]"
+ANNOTATION(expansion_stmt_begin_end) // build the 'begin' and 'end' variables
+                                     // used for computing the expansion size
+                                     // in an iterating expansion statement
 
 // Annotation for #pragma unused(...)
 // For each argument inside the parentheses the pragma handler will produce

@@ -48,6 +48,43 @@ public:
 };
 } // end anonymous namespace
 
+class Parser::TokenInjectionHandlerImpl : public sema::TokenInjectionHandler {
+  Parser& P;
+
+public:
+  explicit TokenInjectionHandlerImpl(Parser& P) : P{P} {}
+  ExprResult
+  ParseTokensAsExpression(Tokens Toks) override {
+    char EofMarker{};
+
+    // Add an EOF token so we know when to stop.
+    assert(Toks.back().isNot(tok::eof));
+    Token &EofToken = Toks.emplace_back();
+    EofToken.startToken();
+    EofToken.setKind(tok::eof);
+    EofToken.setEofData(&EofMarker);
+
+    // Add the current token so we don't lose it.
+    Toks.push_back(P.Tok);
+    P.PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/true,
+                          /*IsReinjected=*/false);
+
+    // We need to consume the current token to actually start parsing the
+    // injected tokens.
+    P.ConsumeAnyToken();
+    ExprResult Res = P.ParseExpression();
+
+    // We should have parsed exactly one expression; if we still have tokens
+    // left, then there was probably an error, so skip them.
+    while (P.Tok.isNot(tok::eof))
+      P.ConsumeAnyToken();
+
+    assert(P.Tok.getEofData() == &EofMarker);
+    P.ConsumeAnyToken();
+    return Res;
+  }
+};
+
 IdentifierInfo *Parser::getSEHExceptKeyword() {
   // __except is accepted as a (contextual) keyword
   if (!Ident__except && (getLangOpts().MicrosoftExt || getLangOpts().Borland))
@@ -73,6 +110,8 @@ Parser::Parser(Preprocessor &pp, Sema &actions, bool skipFunctionBodies)
   // destructor.
   initializePragmaHandlers();
 
+  actions.setTokenInjectionHandler(
+      std::make_unique<TokenInjectionHandlerImpl>(*this));
   CommentSemaHandler.reset(new ActionCommentHandler(actions));
   PP.addCommentHandler(CommentSemaHandler.get());
 

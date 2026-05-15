@@ -859,6 +859,17 @@ enum AttrName { Target, TargetClones, TargetVersion };
 
 void inferNoReturnAttr(Sema &S, Decl *D);
 
+namespace sema {
+class TokenInjectionHandler {
+protected:
+  TokenInjectionHandler() = default;
+public:
+  using Tokens = SmallVector<Token>;
+  virtual ~TokenInjectionHandler() = default;
+  virtual ExprResult ParseTokensAsExpression(Tokens Tokens) = 0;
+};
+}
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
@@ -1276,8 +1287,14 @@ public:
   /// For example, user-defined classes, built-in "id" type, etc.
   Scope *TUScope;
 
+  std::unique_ptr<sema::TokenInjectionHandler> TokenInjectionHandler = nullptr;
+
   void incrementMSManglingNumber() const {
     return CurScope->incrementMSManglingNumber();
+  }
+
+  void setTokenInjectionHandler(std::unique_ptr<sema::TokenInjectionHandler> TIH) {
+    TokenInjectionHandler = std::move(TIH);
   }
 
   /// Try to recover by turning the given expression into a
@@ -11214,17 +11231,20 @@ public:
       ArrayRef<MaterializeTemporaryExpr *> LifetimeExtendTemps,
       BuildForRangeKind Kind, bool Constexpr,
       StmtResult *RebuildResult = nullptr,
-      llvm::function_ref<StmtResult()> RebuildWithDereference = {});
+      llvm::function_ref<StmtResult()> RebuildWithDereference = {},
+      IdentifierInfo *BeginName = nullptr, IdentifierInfo *EndName = nullptr);
 
   /// Helper used by the expansion statements and for-range code to build
   /// a variable declaration for e.g. 'begin' and 'end'.
   VarDecl *BuildForRangeVarDecl(SourceLocation Loc, QualType Type,
-                                StringRef Name, bool Constexpr);
+                                IdentifierInfo *Name, bool Constexpr);
 
   /// Build the range variable of a range-based for loop or iterating
   /// expansion statement and return its DeclStmt.
   StmtResult BuildCXXForRangeRangeVar(Scope *S, Expr *Range, QualType Type,
                                       bool Constexpr = false);
+
+  /// Build 'begin-expr' for a range-based for loop.
 
   /// FinishCXXForRangeStmt - Attach the body to a C++0x for-range statement.
   /// This is a separate step from ActOnCXXForRangeStmt because analysis of the

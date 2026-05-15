@@ -262,9 +262,11 @@ static IterableExpansionStmtData TryBuildIterableExpansionStmtInitializer(
   // Store it in a variable.
   // See also Sema::BuildCXXForRangeBeginEndVars().
   const auto DepthStr = std::to_string(Scope->getDepth() / 2);
+  IdentifierInfo *Name =
+      S.PP.getIdentifierInfo(std::string("__iter") + DepthStr);
   VarDecl *IterVar =
       S.BuildForRangeVarDecl(ColonLoc, S.Context.getAutoDeductType(),
-                             std::string("__iter") + DepthStr, VarIsConstexpr);
+                             Name, VarIsConstexpr);
   S.AddInitializerToDecl(IterVar, BeginPlusI.get(), /*DirectInit=*/false);
   if (IterVar->isInvalidDecl())
     return Data;
@@ -674,156 +676,85 @@ Sema::ComputeExpansionSize(CXXExpansionStmtPattern *Expansion) {
     EnterExpressionEvaluationContext ExprEvalCtx(
         *this, ExpressionEvaluationContext::ConstantEvaluated);
 
-    // This is mostly copied from ParseLambdaExpressionAfterIntroducer().
-    ParseScope LambdaScope(*this, Scope::LambdaScope | Scope::DeclScope |
-                                      Scope::FunctionDeclarationScope |
-                                      Scope::FunctionPrototypeScope);
-    AttributeFactory AttrFactory;
-    LambdaIntroducer Intro;
-    Intro.Range = SourceRange(Loc, Loc);
-    Intro.Default = LCD_ByRef; // CWG 3131
-    Intro.DefaultLoc = Loc;
-    DeclSpec DS(AttrFactory);
-    Declarator D(DS, ParsedAttributesView::none(),
-                 DeclaratorContext::LambdaExpr);
-    PushLambdaScope();
-    ActOnLambdaExpressionAfterIntroducer(Intro, getCurScope());
+    sema::TokenInjectionHandler::Tokens Tokens;
+    auto Add = [&](tok::TokenKind TK) -> Token& {
+      Token& Tok = Tokens.emplace_back();
+      Tok.startToken();
+      Tok.setKind(TK);
+      Tok.setLocation(Loc);
+      return Tok;
+    };
 
-    // Make the lambda 'consteval'.
-    {
-      ParseScope Prototype(*this, Scope::FunctionPrototypeScope |
-                                      Scope::FunctionDeclarationScope |
-                                      Scope::DeclScope);
-      const char *PrevSpec = nullptr;
-      unsigned DiagId = 0;
-      DS.SetConstexprSpec(ConstexprSpecKind::Consteval, Loc, PrevSpec, DiagId);
-      assert(DiagId == 0 && PrevSpec == nullptr);
-      ActOnLambdaClosureParameters(getCurScope(), /*ParamInfo=*/{});
-      ActOnLambdaClosureQualifiers(Intro, /*MutableLoc=*/SourceLocation());
-    }
+    auto AddIdent = [&](StringRef Name) {
+      IdentifierInfo *II = PP.getIdentifierInfo(Name);
+      Token &Ident = Add(tok::identifier);
+      Ident.setIdentifierInfo(II);
+    };
 
-    ParseScope BodyScope(*this, Scope::BlockScope | Scope::FnScope |
-                                    Scope::DeclScope |
-                                    Scope::CompoundStmtScope);
-
-    ActOnStartOfLambdaDefinition(Intro, D, DS);
-
-    // Enter the compound statement that is the lambda body.
-    ActOnStartOfCompoundStmt(/*IsStmtExpr=*/false);
-    ActOnAfterCompoundStatementLeadingPragmas();
-    llvm::scope_exit PopScopesOnReturn{[&] {
-      ActOnFinishOfCompoundStmt();
-      ActOnLambdaError(Loc, getCurScope());
-    }};
+    // [&] consteval {
+    Add(tok::l_square);
+    Add(tok::amp);
+    Add(tok::r_square);
+    Add(tok::kw_consteval);
+    Add(tok::l_brace);
 
     // std::ptrdiff_t result = 0;
-    QualType PtrDiffT = Context.getPointerDiffType();
-    VarDecl *ResultVar = VarDecl::Create(
-        Context, CurContext, Loc, Loc, &PP.getIdentifierTable().get("__result"),
-        PtrDiffT, Context.getTrivialTypeSourceInfo(PtrDiffT, Loc), SC_None);
-    Expr *Zero = ActOnIntegerConstant(Loc, 0).get();
-    AddInitializerToDecl(ResultVar, Zero, false);
-    StmtResult ResultVarStmt =
-        ActOnDeclStmt(ConvertDeclToDeclGroup(ResultVar), Loc, Loc);
-    if (ResultVarStmt.isInvalid() || ResultVar->isInvalidDecl())
-      return std::nullopt;
+    Token &PtrDiffT = Add(tok::annot_typename);
+    PtrDiffT.setAnnotationValue(
+        ParsedType::make(Context.getPointerDiffType()).getAsOpaquePtr());
 
-    // Start the for loop.
-    ParseScope ForScope(*this, Scope::DeclScope | Scope::ControlScope);
+    AddIdent("__result");
+    Add(tok::equal);
+    Token &Zero = Add(tok::numeric_constant);
+    Zero.setLiteralData("0");
+    Zero.setLength(1);
+    Add(tok::semi);
 
     // auto b = begin-expr;
     // auto e = end-expr;
-    ForRangeBeginEndInfo Info = BuildCXXForRangeBeginEndVars(
-        getCurScope(), Expansion->getRangeVar(), Loc,
-        /*CoawaitLoc=*/{},
-        /*LifetimeExtendTemps=*/{}, BFRK_Build, /*Constexpr=*/false);
-    if (!Info.isValid())
-      return std::nullopt;
+    StringRef BeginName = "__b";
+    StringRef EndName = "__e";
 
-    StmtResult BeginStmt =
-        ActOnDeclStmt(ConvertDeclToDeclGroup(Info.BeginVar), Loc, Loc);
-    StmtResult EndStmt =
-        ActOnDeclStmt(ConvertDeclToDeclGroup(Info.EndVar), Loc, Loc);
-    if (BeginStmt.isInvalid() || EndStmt.isInvalid())
-      return std::nullopt;
+    // We represent the entire declaration as an annotation token (except for
+    // the variable names, which are added as separate tokens). This is because
+    // there are dedicated code paths for creating these variables, so just
+    // attaching 'begin-expr' to a normal variable declaration would be
+    // incorrect.
+    Token &Begin = Add(tok::annot_expansion_stmt_begin_end);
+    Begin.setAnnotationValue(Expansion->getRangeVar());
+    AddIdent(BeginName);
+    AddIdent(EndName);
 
-    // b != e
-    auto GetDeclRef = [&](VarDecl *VD) -> DeclRefExpr * {
-      return BuildDeclRefExpr(VD, VD->getType().getNonReferenceType(),
-                              VK_LValue, Loc);
-    };
-
-    DeclRefExpr *Begin = GetDeclRef(Info.BeginVar);
-    DeclRefExpr *End = GetDeclRef(Info.EndVar);
-    ExprResult NotEqual =
-        ActOnBinOp(getCurScope(), Loc, tok::exclaimequal, Begin, End);
-    if (NotEqual.isInvalid())
-      return std::nullopt;
-    ConditionResult Condition = ActOnCondition(
-        getCurScope(), Loc, NotEqual.get(), ConditionKind::Boolean,
-        /*MissingOk=*/false);
-    if (Condition.isInvalid())
-      return std::nullopt;
-
-    // ++b
-    Begin = GetDeclRef(Info.BeginVar);
-    ExprResult Increment =
-        ActOnUnaryOp(getCurScope(), Loc, tok::plusplus, Begin);
-    if (Increment.isInvalid())
-      return std::nullopt;
-    FullExprArg ThirdPart = MakeFullDiscardedValueExpr(Increment.get());
-
-    // Enter the body of the for loop.
-    ParseScope InnerScope(*this, Scope::DeclScope);
-    getCurScope()->decrementMSManglingNumber();
-
-    // ++result;
-    DeclRefExpr *ResultDeclRef = BuildDeclRefExpr(
-        ResultVar, ResultVar->getType().getNonReferenceType(), VK_LValue, Loc);
-    ExprResult IncrementResult =
-        ActOnUnaryOp(getCurScope(), Loc, tok::plusplus, ResultDeclRef);
-    if (IncrementResult.isInvalid())
-      return std::nullopt;
-    StmtResult IncrementStmt = ActOnExprStmt(IncrementResult.get());
-    if (IncrementStmt.isInvalid())
-      return std::nullopt;
-
-    // Exit the for loop.
-    InnerScope.Exit();
-    ForScope.Exit();
-    StmtResult ForLoop = ActOnForStmt(Loc, Loc, /*First=*/nullptr, Condition,
-                                      ThirdPart, Loc, IncrementStmt.get());
-    if (ForLoop.isInvalid())
-      return std::nullopt;
+    // for (; b != e; ++b) ++result;
+    Add(tok::kw_for);
+    Add(tok::l_paren);
+    Add(tok::semi);
+    AddIdent(BeginName);
+    Add(tok::exclaimequal);
+    AddIdent(EndName);
+    Add(tok::semi);
+    Add(tok::plusplus);
+    AddIdent(BeginName);
+    Add(tok::r_paren);
+    Add(tok::plusplus);
+    AddIdent("__result");
+    Add(tok::semi);
 
     // return result;
-    ResultDeclRef = BuildDeclRefExpr(
-        ResultVar, ResultVar->getType().getNonReferenceType(), VK_LValue, Loc);
-    StmtResult Return = ActOnReturnStmt(Loc, ResultDeclRef, getCurScope());
-    if (Return.isInvalid())
-      return std::nullopt;
+    Add(tok::kw_return);
+    AddIdent("__result");
+    Add(tok::semi);
 
-    // Finally, we can build the compound statement that is the lambda body.
-    StmtResult LambdaBody =
-        ActOnCompoundStmt(Loc, Loc,
-                          {ResultVarStmt.get(), BeginStmt.get(), EndStmt.get(),
-                           ForLoop.get(), Return.get()},
-                          /*isStmtExpr=*/false);
-    if (LambdaBody.isInvalid())
-      return std::nullopt;
+    // }()
+    Add(tok::r_brace);
+    Add(tok::l_paren);
+    Add(tok::r_paren);
 
-    ActOnFinishOfCompoundStmt();
-    BodyScope.Exit();
-    LambdaScope.Exit();
-    PopScopesOnReturn.release();
-    ExprResult Lambda = ActOnLambdaExpr(Loc, LambdaBody.get());
-    if (Lambda.isInvalid())
-      return std::nullopt;
-
-    // Invoke the lambda.
+    // Parse it.
+    assert(TokenInjectionHandler != nullptr);
     ExprResult Call =
-        ActOnCallExpr(getCurScope(), Lambda.get(), Loc, /*ArgExprs=*/{}, Loc);
-    if (Call.isInvalid())
+        TokenInjectionHandler->ParseTokensAsExpression(std::move(Tokens));
+    if (Call.isInvalid() || Call.get()->isTypeDependent())
       return std::nullopt;
 
     Expr::EvalResult ER;

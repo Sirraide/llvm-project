@@ -2420,7 +2420,7 @@ static bool FinishForRangeVarDecl(Sema &SemaRef, VarDecl *Decl, Expr *Init,
 
   SemaRef.AddInitializerToDecl(Decl, Init, /*DirectInit=*/false);
   SemaRef.FinalizeDeclaration(Decl);
-  SemaRef.CurContext->addHiddenDecl(Decl);
+  SemaRef.PushOnScopeChains(Decl, SemaRef.getCurScope());
   return false;
 }
 
@@ -2461,17 +2461,16 @@ void NoteForRangeBeginEndFunction(Sema &SemaRef, Expr *E,
 
 /// Build a variable declaration for a for-range statement.
 VarDecl *Sema::BuildForRangeVarDecl(SourceLocation Loc, QualType Type,
-                                    StringRef Name, bool Constexpr) {
+                                    IdentifierInfo *Name, bool Constexpr) {
   // Making the variable constexpr doesn't automatically add 'const' to the
   // type, so do that now.
   if (Constexpr && !Type->isReferenceType())
     Type = Type.withConst();
 
   DeclContext *DC = CurContext;
-  IdentifierInfo *II = &PP.getIdentifierTable().get(Name);
   TypeSourceInfo *TInfo = Context.getTrivialTypeSourceInfo(Type, Loc);
   VarDecl *Decl =
-      VarDecl::Create(Context, DC, Loc, Loc, II, Type, TInfo, SC_None);
+      VarDecl::Create(Context, DC, Loc, Loc, Name, Type, TInfo, SC_None);
   Decl->setImplicit();
   Decl->setCXXForRangeImplicitVar(true);
   if (Constexpr)
@@ -2490,9 +2489,11 @@ StmtResult Sema::BuildCXXForRangeRangeVar(Scope *S, Expr *Range, QualType Type,
 
   // Divide by 2, since the variables are in the inner scope (loop body).
   const auto DepthStr = std::to_string(S->getDepth() / 2);
+  IdentifierInfo *Name =
+      PP.getIdentifierInfo(std::string("__range") + DepthStr);
   SourceLocation RangeLoc = Range->getBeginLoc();
   VarDecl *RangeVar = BuildForRangeVarDecl(
-      RangeLoc, Type, std::string("__range") + DepthStr, Constexpr);
+      RangeLoc, Type, Name, Constexpr);
   if (FinishForRangeVarDecl(*this, RangeVar, Range, RangeLoc,
                             diag::err_for_range_deduction_failure))
 
@@ -2763,7 +2764,8 @@ Sema::ForRangeBeginEndInfo Sema::BuildCXXForRangeBeginEndVars(
     SourceLocation CoawaitLoc,
     ArrayRef<MaterializeTemporaryExpr *> LifetimeExtendTemps,
     BuildForRangeKind Kind, bool Constexpr, StmtResult *RebuildResult,
-    llvm::function_ref<StmtResult()> RebuildWithDereference) {
+    llvm::function_ref<StmtResult()> RebuildWithDereference,
+    IdentifierInfo *BeginName, IdentifierInfo *EndName) {
   QualType RangeVarType = RangeVar->getType();
   SourceLocation RangeLoc = RangeVar->getLocation();
   const QualType RangeVarNonRefType = RangeVarType.getNonReferenceType();
@@ -2791,10 +2793,14 @@ Sema::ForRangeBeginEndInfo Sema::BuildCXXForRangeBeginEndVars(
   // Build auto __begin = begin-expr, __end = end-expr.
   // Divide by 2, since the variables are in the inner scope (loop body).
   const auto DepthStr = std::to_string(S->getDepth() / 2);
+  if (!BeginName)
+    BeginName = PP.getIdentifierInfo(std::string("__begin") + DepthStr);
+  if (!EndName)
+    EndName = PP.getIdentifierInfo(std::string("__end") + DepthStr);
   VarDecl *BeginVar = BuildForRangeVarDecl(
-      ColonLoc, AutoType, std::string("__begin") + DepthStr, Constexpr);
+      ColonLoc, AutoType, BeginName, Constexpr);
   VarDecl *EndVar = BuildForRangeVarDecl(
-      ColonLoc, AutoType, std::string("__end") + DepthStr, Constexpr);
+      ColonLoc, AutoType, EndName, Constexpr);
 
   // Build begin-expr and end-expr and attach to __begin and __end variables.
   ExprResult BeginExpr, EndExpr;
