@@ -279,9 +279,9 @@ Lexer *Lexer::Create_ScratchLexer(StringRef Code,
 
   // Set the SourceLocation with the remapping information.  This ensures that
   // GetMappedTokenLoc will remap the tokens as they are lexed.
-  L->FileLoc = SM.createExpansionLoc(SM.getLocForStartOfFile(SpellingFID),
-                                     ExpansionLocStart,
-                                     ExpansionLocEnd, TokLen);
+  L->FileLoc =
+      SM.createExpansionLoc(SM.getLocForStartOfFile(SpellingFID),
+                            ExpansionLocStart, ExpansionLocEnd, TokLen);
   return L;
 }
 

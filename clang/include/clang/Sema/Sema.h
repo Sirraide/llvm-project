@@ -883,7 +883,7 @@ public:
   virtual ExprResult ParseAsExpression(ArrayRef<TokenOrString> Code,
                                        SourceLocation InjectionLoc) = 0;
 };
-}
+} // namespace sema
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -1308,7 +1308,8 @@ public:
     return CurScope->incrementMSManglingNumber();
   }
 
-  void setTokenInjectionHandler(std::unique_ptr<sema::TokenInjectionHandler> TIH) {
+  void
+  setTokenInjectionHandler(std::unique_ptr<sema::TokenInjectionHandler> TIH) {
     TokenInjectionHandler = std::move(TIH);
   }
 

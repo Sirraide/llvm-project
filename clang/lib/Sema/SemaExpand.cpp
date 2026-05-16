@@ -264,9 +264,8 @@ static IterableExpansionStmtData TryBuildIterableExpansionStmtInitializer(
   const auto DepthStr = std::to_string(Scope->getDepth() / 2);
   IdentifierInfo *Name =
       S.PP.getIdentifierInfo(std::string("__iter") + DepthStr);
-  VarDecl *IterVar =
-      S.BuildForRangeVarDecl(ColonLoc, S.Context.getAutoDeductType(),
-                             Name, VarIsConstexpr);
+  VarDecl *IterVar = S.BuildForRangeVarDecl(
+      ColonLoc, S.Context.getAutoDeductType(), Name, VarIsConstexpr);
   S.AddInitializerToDecl(IterVar, BeginPlusI.get(), /*DirectInit=*/false);
   if (IterVar->isInvalidDecl())
     return Data;
@@ -691,10 +690,11 @@ Sema::ComputeExpansionSize(CXXExpansionStmtPattern *Expansion) {
     Annot.setLocation(Expansion->getColonLoc());
     Annot.setAnnotationValue(Expansion->getRangeVar());
     sema::TokenInjectionHandler::TokenOrString Code[] = {
-      R"c++(
+        R"c++(
         [&] consteval {
           __PTRDIFF_TYPE__ __result = 0;)c++",
-          Annot, R"c++(__begin __end
+        Annot,
+        R"c++(__begin __end
           for (; __begin != __end; ++__begin) ++__result;
           return __result;
         }()

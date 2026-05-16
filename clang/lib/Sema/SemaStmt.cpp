@@ -2492,8 +2492,7 @@ StmtResult Sema::BuildCXXForRangeRangeVar(Scope *S, Expr *Range, QualType Type,
   IdentifierInfo *Name =
       PP.getIdentifierInfo(std::string("__range") + DepthStr);
   SourceLocation RangeLoc = Range->getBeginLoc();
-  VarDecl *RangeVar = BuildForRangeVarDecl(
-      RangeLoc, Type, Name, Constexpr);
+  VarDecl *RangeVar = BuildForRangeVarDecl(RangeLoc, Type, Name, Constexpr);
   if (FinishForRangeVarDecl(*this, RangeVar, Range, RangeLoc,
                             diag::err_for_range_deduction_failure))
 
@@ -2797,10 +2796,10 @@ Sema::ForRangeBeginEndInfo Sema::BuildCXXForRangeBeginEndVars(
     BeginName = PP.getIdentifierInfo(std::string("__begin") + DepthStr);
   if (!EndName)
     EndName = PP.getIdentifierInfo(std::string("__end") + DepthStr);
-  VarDecl *BeginVar = BuildForRangeVarDecl(
-      ColonLoc, AutoType, BeginName, Constexpr);
-  VarDecl *EndVar = BuildForRangeVarDecl(
-      ColonLoc, AutoType, EndName, Constexpr);
+  VarDecl *BeginVar =
+      BuildForRangeVarDecl(ColonLoc, AutoType, BeginName, Constexpr);
+  VarDecl *EndVar =
+      BuildForRangeVarDecl(ColonLoc, AutoType, EndName, Constexpr);
 
   // Build begin-expr and end-expr and attach to __begin and __end variables.
   ExprResult BeginExpr, EndExpr;

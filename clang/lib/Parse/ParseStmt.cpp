@@ -1226,7 +1226,7 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
     // and moreover, this annotation token shouldn't appear in any other context
     // anyway.
     if (Tok.is(tok::annot_expansion_stmt_begin_end)) {
-      auto *RangeVarDecl = static_cast<VarDecl*>(Tok.getAnnotationValue());
+      auto *RangeVarDecl = static_cast<VarDecl *>(Tok.getAnnotationValue());
       ConsumeAnnotationToken();
 
       assert(Tok.is(tok::identifier));
@@ -1242,7 +1242,7 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
           getCurScope(), RangeVarDecl, RangeVarDecl->getBeginLoc(),
           /*CoawaitLoc=*/{},
           /*LifetimeExtendTemps=*/{}, Sema::BFRK_Build, /*Constexpr=*/false,
-          /*RebuildResult=*/ nullptr, /*RebuildWithDereference=*/nullptr,
+          /*RebuildResult=*/nullptr, /*RebuildWithDereference=*/nullptr,
           BeginName, EndName);
       if (!Info.isValid())
         continue;

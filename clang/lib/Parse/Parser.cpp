@@ -49,18 +49,18 @@ public:
 } // end anonymous namespace
 
 class Parser::TokenInjectionHandlerImpl : public sema::TokenInjectionHandler {
-  Parser& P;
+  Parser &P;
 
 public:
-  explicit TokenInjectionHandlerImpl(Parser& P) : P{P} {}
+  explicit TokenInjectionHandlerImpl(Parser &P) : P{P} {}
 
   ExprResult ParseAsExpression(ArrayRef<TokenOrString> Code,
                                SourceLocation InjectionLoc) override {
     // Collect tokens.
     SmallVector<Token> Tokens;
-    for (const TokenOrString& TokOrStr : Code) {
+    for (const TokenOrString &TokOrStr : Code) {
 
-      if (const auto* T = std::get_if<Token>(&TokOrStr)) {
+      if (const auto *T = std::get_if<Token>(&TokOrStr)) {
         Tokens.push_back(*T);
       } else {
         auto Str = std::get<StringRef>(TokOrStr);
