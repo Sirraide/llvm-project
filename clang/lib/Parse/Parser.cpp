@@ -54,20 +54,27 @@ class Parser::TokenInjectionHandlerImpl : public sema::TokenInjectionHandler {
 public:
   explicit TokenInjectionHandlerImpl(Parser& P) : P{P} {}
   ExprResult
-  ParseTokensAsExpression(Tokens Toks) override {
-    char EofMarker{};
-
+  ParseTokensAsExpression(Tokens&& Toks) override {
     // Add an EOF token so we know when to stop.
     assert(Toks.back().isNot(tok::eof));
     Token &EofToken = Toks.emplace_back();
     EofToken.startToken();
     EofToken.setKind(tok::eof);
-    EofToken.setEofData(&EofMarker);
-
-    // Add the current token so we don't lose it.
-    Toks.push_back(P.Tok);
     P.PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/true,
                           /*IsReinjected=*/false);
+    return ParseExpressionInTokenStream();
+  }
+
+  ExprResult ParseAsExpression(StringRef Code, SourceLocation InjectionLoc,
+                               ArrayRef<Token> InterpolatedTokens) override {
+    if (P.PP.EnterInjectedString(Code, InjectionLoc, InterpolatedTokens))
+      return ExprError();
+    return ParseExpressionInTokenStream();
+  }
+
+private:
+  ExprResult ParseExpressionInTokenStream() {
+    SaveAndRestore SaveCurTok{P.Tok};
 
     // We need to consume the current token to actually start parsing the
     // injected tokens.
@@ -79,8 +86,6 @@ public:
     while (P.Tok.isNot(tok::eof))
       P.ConsumeAnyToken();
 
-    assert(P.Tok.getEofData() == &EofMarker);
-    P.ConsumeAnyToken();
     return Res;
   }
 };

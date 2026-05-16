@@ -676,84 +676,34 @@ Sema::ComputeExpansionSize(CXXExpansionStmtPattern *Expansion) {
     EnterExpressionEvaluationContext ExprEvalCtx(
         *this, ExpressionEvaluationContext::ConstantEvaluated);
 
-    sema::TokenInjectionHandler::Tokens Tokens;
-    auto Add = [&](tok::TokenKind TK) -> Token& {
-      Token& Tok = Tokens.emplace_back();
-      Tok.startToken();
-      Tok.setKind(TK);
-      Tok.setLocation(Loc);
-      return Tok;
-    };
+    // We represent the declaration of *both* the 'begin'/'end' variables as a
+    // single an annotation token (excluding the variable names, which are added
+    // as separate tokens).
+    //
+    // This is because there are dedicated code paths for creating these
+    // variables, so just attaching 'begin-expr' to a normal variable
+    // declaration would be incorrect. The existing for-range code only
+    // really supports creating both 'begin' and 'end' at once, so we handle
+    // this in ParseCompoundStatementBody().
+    StringRef Code = R"c++(
+      [&] consteval {
+        __PTRDIFF_TYPE__ __result = 0;
+        __clang_inject_annotation_token(0) __begin __end
+        for (; __begin != __end; ++__begin) ++__result;
+        return __result;
+      }()
+    )c++";
 
-    auto AddIdent = [&](StringRef Name) {
-      IdentifierInfo *II = PP.getIdentifierInfo(Name);
-      Token &Ident = Add(tok::identifier);
-      Ident.setIdentifierInfo(II);
-    };
-
-    // [&] consteval {
-    Add(tok::l_square);
-    Add(tok::amp);
-    Add(tok::r_square);
-    Add(tok::kw_consteval);
-    Add(tok::l_brace);
-
-    // std::ptrdiff_t result = 0;
-    Token &PtrDiffT = Add(tok::annot_typename);
-    PtrDiffT.setAnnotationValue(
-        ParsedType::make(Context.getPointerDiffType()).getAsOpaquePtr());
-
-    AddIdent("__result");
-    Add(tok::equal);
-    Token &Zero = Add(tok::numeric_constant);
-    Zero.setLiteralData("0");
-    Zero.setLength(1);
-    Add(tok::semi);
-
-    // auto b = begin-expr;
-    // auto e = end-expr;
-    StringRef BeginName = "__b";
-    StringRef EndName = "__e";
-
-    // We represent the entire declaration as an annotation token (except for
-    // the variable names, which are added as separate tokens). This is because
-    // there are dedicated code paths for creating these variables, so just
-    // attaching 'begin-expr' to a normal variable declaration would be
-    // incorrect.
-    Token &Begin = Add(tok::annot_expansion_stmt_begin_end);
-    Begin.setAnnotationValue(Expansion->getRangeVar());
-    AddIdent(BeginName);
-    AddIdent(EndName);
-
-    // for (; b != e; ++b) ++result;
-    Add(tok::kw_for);
-    Add(tok::l_paren);
-    Add(tok::semi);
-    AddIdent(BeginName);
-    Add(tok::exclaimequal);
-    AddIdent(EndName);
-    Add(tok::semi);
-    Add(tok::plusplus);
-    AddIdent(BeginName);
-    Add(tok::r_paren);
-    Add(tok::plusplus);
-    AddIdent("__result");
-    Add(tok::semi);
-
-    // return result;
-    Add(tok::kw_return);
-    AddIdent("__result");
-    Add(tok::semi);
-
-    // }()
-    Add(tok::r_brace);
-    Add(tok::l_paren);
-    Add(tok::r_paren);
+    Token Annot;
+    Annot.startToken();
+    Annot.setKind(tok::annot_expansion_stmt_begin_end);
+    Annot.setLocation(Expansion->getColonLoc());
+    Annot.setAnnotationValue(Expansion->getRangeVar());
 
     // Parse it.
     assert(TokenInjectionHandler != nullptr);
-    ExprResult Call =
-        TokenInjectionHandler->ParseTokensAsExpression(std::move(Tokens));
+    ExprResult Call = TokenInjectionHandler->ParseAsExpression(
+        Code, Expansion->getColonLoc(), {Annot});
     if (Call.isInvalid() || Call.get()->isTypeDependent())
       return std::nullopt;
 

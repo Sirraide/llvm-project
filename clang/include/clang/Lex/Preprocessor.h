@@ -240,6 +240,7 @@ class Preprocessor {
   IdentifierInfo *Ident__is_target_variant_os;
   IdentifierInfo *Ident__is_target_variant_environment;
   IdentifierInfo *Ident__FLT_EVAL_METHOD__;        // __FLT_EVAL_METHOD
+  IdentifierInfo *Ident__clang_inject_annotation_token;
 
   // Weak, only valid (and set) while InMacroArgs is true.
   Token* ArgMacro;
@@ -259,6 +260,9 @@ class Preprocessor {
 
   LangOptions::FPEvalMethodKind TUFPEvalMethod =
       LangOptions::FPEvalMethodKind::FEM_UnsetOnCommandLine;
+
+  // Stack of tokens that can be injected via __clang_inject_annotation_token.
+  SmallVector<SmallVector<Token>> InjectedTokenStack;
 
   // Next __COUNTER__ value, starts at 0.
   uint32_t CounterValue = 0;
@@ -1758,6 +1762,17 @@ public:
     EnterTokenStream(Toks.data(), Toks.size(), DisableMacroExpansion, false,
                      IsReinject);
   }
+
+  /// Enter a string to be lexed and preprocessed.
+  ///
+  /// This is used for token injection; to facilitate injection of annotation
+  /// tokens, the builtin macro '__clang_inject_annotation_token' followed by
+  /// an integer literal token with value N is replaced with the N-th token
+  /// in 'InjectedTokens'.
+  ///
+  /// \return 'true' on error.
+  bool EnterInjectedString(StringRef Code, SourceLocation InjectionLoc,
+                           ArrayRef<Token> InjectedTokens);
 
   /// Pop the current lexer/macro exp off the top of the lexer stack.
   ///

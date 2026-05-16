@@ -1221,6 +1221,10 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
     //
     // The annotation token is followed by 2 identifier tokens, which indicate
     // the variable names for the begin and end variable, respectively.
+    //
+    // We handle this here because this results in *two* statements, not one,
+    // and moreover, this annotation token shouldn't appear in any other context
+    // anyway.
     if (Tok.is(tok::annot_expansion_stmt_begin_end)) {
       auto *RangeVarDecl = static_cast<VarDecl*>(Tok.getAnnotationValue());
       ConsumeAnnotationToken();

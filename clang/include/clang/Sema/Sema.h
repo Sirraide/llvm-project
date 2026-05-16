@@ -866,7 +866,10 @@ protected:
 public:
   using Tokens = SmallVector<Token>;
   virtual ~TokenInjectionHandler() = default;
-  virtual ExprResult ParseTokensAsExpression(Tokens Tokens) = 0;
+  virtual ExprResult ParseTokensAsExpression(Tokens &&Tokens) = 0;
+  virtual ExprResult
+  ParseAsExpression(StringRef Code, SourceLocation InjectionLoc,
+                    ArrayRef<Token> InterpolatedTokens = {}) = 0;
 };
 }
 

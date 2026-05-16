@@ -52,6 +52,14 @@ protected:
   /// True after \#include; turns \<xx> or "xxx" into a tok::header_name token.
   bool ParsingFilename = false;
 
+  /// True if this was constructed via Preprocessor::EnterInjectedString(); this
+  /// tells us to:
+  ///  1. keep an EOF token once we're done, and
+  ///  2. pop the currently injected tokens off the injection stack in the
+  ///     preprocessor.
+  ///
+  bool LexingInjectedString = false;
+
   /// True if in raw mode.
   ///
   /// Raw mode disables interpretation of tokens and is a far faster mode to
