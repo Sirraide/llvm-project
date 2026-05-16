@@ -685,25 +685,26 @@ Sema::ComputeExpansionSize(CXXExpansionStmtPattern *Expansion) {
     // declaration would be incorrect. The existing for-range code only
     // really supports creating both 'begin' and 'end' at once, so we handle
     // this in ParseCompoundStatementBody().
-    StringRef Code = R"c++(
-      [&] consteval {
-        __PTRDIFF_TYPE__ __result = 0;
-        __clang_inject_annotation_token(0) __begin __end
-        for (; __begin != __end; ++__begin) ++__result;
-        return __result;
-      }()
-    )c++";
-
     Token Annot;
     Annot.startToken();
     Annot.setKind(tok::annot_expansion_stmt_begin_end);
     Annot.setLocation(Expansion->getColonLoc());
     Annot.setAnnotationValue(Expansion->getRangeVar());
+    sema::TokenInjectionHandler::TokenOrString Code[] = {
+      R"c++(
+        [&] consteval {
+          __PTRDIFF_TYPE__ __result = 0;)c++",
+          Annot, R"c++(__begin __end
+          for (; __begin != __end; ++__begin) ++__result;
+          return __result;
+        }()
+      )c++",
+    };
 
     // Parse it.
     assert(TokenInjectionHandler != nullptr);
     ExprResult Call = TokenInjectionHandler->ParseAsExpression(
-        Code, Expansion->getColonLoc(), {Annot});
+        Code, Expansion->getColonLoc());
     if (Call.isInvalid() || Call.get()->isTypeDependent())
       return std::nullopt;
 

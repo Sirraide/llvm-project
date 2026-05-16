@@ -249,11 +249,19 @@ void Lexer::resetExtendedTokenMode() {
 /// interface that could handle this stuff.  This would pull GetMappedTokenLoc
 /// out of the critical path of the lexer!
 ///
-Lexer *Lexer::Create_PragmaLexer(SourceLocation SpellingLoc,
-                                 SourceLocation ExpansionLocStart,
-                                 SourceLocation ExpansionLocEnd,
-                                 unsigned TokLen, Preprocessor &PP) {
+Lexer *Lexer::Create_ScratchLexer(StringRef Code,
+                                  SourceLocation ExpansionLocStart,
+                                  SourceLocation ExpansionLocEnd,
+                                  Preprocessor &PP) {
   SourceManager &SM = PP.getSourceManager();
+
+  // Plop the string (including the newline and trailing null) into a buffer
+  // where we can lex it.
+  Token TmpTok;
+  TmpTok.startToken();
+  PP.CreateString(Code, TmpTok);
+  SourceLocation SpellingLoc = TmpTok.getLocation();
+  unsigned TokLen = Code.size();
 
   // Create the lexer as if we were going to lex the file normally.
   FileID SpellingFID = SM.getFileID(SpellingLoc);
@@ -274,13 +282,6 @@ Lexer *Lexer::Create_PragmaLexer(SourceLocation SpellingLoc,
   L->FileLoc = SM.createExpansionLoc(SM.getLocForStartOfFile(SpellingFID),
                                      ExpansionLocStart,
                                      ExpansionLocEnd, TokLen);
-
-  // Ensure that the lexer thinks it is inside a directive, so that end \n will
-  // return an EOD token.
-  L->ParsingPreprocessorDirective = true;
-
-  // This lexer really is for _Pragma.
-  L->Is_PragmaLexer = true;
   return L;
 }
 

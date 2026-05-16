@@ -384,10 +384,6 @@ void Preprocessor::RegisterBuiltinMacros() {
     Ident__MODULE__ = RegisterBuiltinMacro("__MODULE__");
   else
     Ident__MODULE__ = nullptr;
-
-  // Token injection.
-  Ident__clang_inject_annotation_token =
-      RegisterBuiltinMacro("__clang_inject_annotation_token");
 }
 
 /// isTrivialSingleTokenExpansion - Return true if MI, which has a single token
@@ -2055,44 +2051,6 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
               Tok, *this, diag::err_feature_check_malformed);
           return II && isTargetVariantEnvironment(getTargetInfo(), II);
         });
-  } else if (II == Ident__clang_inject_annotation_token) {
-    SourceLocation Loc = Tok.getLocation();
-
-    // The syntax of this is '__clang_inject_annotation_token ( integer )', so
-    // the next token must be '('.
-    LexNonComment(Tok);
-    if (Tok.isNot(tok::l_paren)) {
-      Diag(getLocForEndOfToken(Tok.getLocation()), diag::err_pp_expected_after)
-        << II << tok::l_paren;
-      return;
-    }
-
-    uint64_t Index = 0;
-    LexNonComment(Tok);
-    if (!parseSimpleIntegerLiteral(Tok, Index))
-      return;
-
-    // parseSimpleIntegerLiteral() already discarded the literal.
-    if (Tok.isNot(tok::r_paren)) {
-      Diag(getLocForEndOfToken(Tok.getLocation()), diag::err_pp_expected_after)
-        << Index << tok::r_paren;
-      return;
-    }
-
-    if (InjectedTokenStack.empty()) {
-      Diag(Loc, diag::err_injection_stack_empty)
-          << SourceRange(Loc, Tok.getLocation());
-      return;
-    }
-
-    if (Index >= InjectedTokenStack.back().size()) {
-      Diag(Loc, diag::err_injection_out_of_bounds)
-          << Index << SourceRange(Loc, Tok.getLocation());
-      return;
-    }
-
-    Tok = InjectedTokenStack.back()[Index];
-    return;
   } else {
     llvm_unreachable("Unknown identifier!");
   }

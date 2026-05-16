@@ -126,12 +126,6 @@ def warn_multichar_character_literal : Warning<
 def warn_four_char_character_literal : Warning<
   "multi-character character constant">, InGroup<FourByteMultiChar>, DefaultIgnore;
 
-// String injection
-def err_injection_stack_empty : Error<
-  "'__clang_inject_annotation_token' cannot be used outside an injected string">;
-def err_injection_out_of_bounds : Error<
-  "no token with index %0 for '__clang_inject_annotation_token'">;
-
 // Unicode and UCNs
 def err_invalid_utf8 : Error<
   "source file is not valid UTF-8">;

@@ -1228,9 +1228,12 @@ StmtResult Parser::ParseCompoundStatementBody(bool isStmtExpr) {
     if (Tok.is(tok::annot_expansion_stmt_begin_end)) {
       auto *RangeVarDecl = static_cast<VarDecl*>(Tok.getAnnotationValue());
       ConsumeAnnotationToken();
+
       assert(Tok.is(tok::identifier));
       IdentifierInfo *BeginName = Tok.getIdentifierInfo();
       ConsumeToken();
+
+      assert(Tok.is(tok::identifier));
       IdentifierInfo *EndName = Tok.getIdentifierInfo();
       ConsumeToken();
 

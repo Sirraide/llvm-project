@@ -542,6 +542,22 @@ Module *Preprocessor::getCurrentModuleImplementation() {
   return getHeaderSearchInfo().lookupModule(getLangOpts().ModuleName);
 }
 
+bool Preprocessor::LexTokensInString(SmallVectorImpl<Token> &Tokens,
+                                     StringRef Code, SourceLocation Loc) {
+  Lexer *L = Lexer::Create_ScratchLexer(Code, Loc, Loc, *this);
+  EnterSourceFileWithLexer(L, nullptr);
+  L->LexingInjectedString = true;
+  for (;;) {
+    Token Tok;
+    Lex(Tok);
+    if (Tok.is(tok::unknown))
+      return true;
+    if (Tok.is(tok::eof))
+      return false;
+    Tokens.push_back(Tok);
+  }
+}
+
 //===----------------------------------------------------------------------===//
 // Preprocessor Initialization Methods
 //===----------------------------------------------------------------------===//

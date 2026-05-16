@@ -213,27 +213,6 @@ void Preprocessor::EnterTokenStream(const Token *Toks, unsigned NumToks,
     CurLexerCallback = CLK_TokenLexer;
 }
 
-bool Preprocessor::EnterInjectedString(StringRef Code,
-                                       SourceLocation InjectionLoc,
-                                       ArrayRef<Token> InjectedTokens) {
-  std::unique_ptr<llvm::MemoryBuffer> Buf =
-      llvm::MemoryBuffer::getMemBuffer(Code, "<injected tokens>");
-  llvm::MemoryBufferRef BufferRef{*Buf};
-  FileID FID = SourceMgr.createFileID(std::move(Buf));
-  if (FID.isInvalid())
-    return true;
-
-  InjectedTokenStack.emplace_back(InjectedTokens);
-
-  Lexer *TheLexer =
-      new Lexer(FID, BufferRef, *this, /*IsFirstIncludeOfFile=*/false);
-  TheLexer->LexingInjectedString = true;
-  TheLexer->FileLoc = SourceMgr.createExpansionLoc(
-      TheLexer->FileLoc, InjectionLoc, InjectionLoc, 1);
-  EnterSourceFileWithLexer(TheLexer, CurDirLookup);
-  return false;
-}
-
 /// Compute the relative path that names the given file relative to
 /// the given directory.
 static void computeRelativePath(FileManager &FM, const DirectoryEntry *Dir,
@@ -515,10 +494,9 @@ bool Preprocessor::HandleEndOfFile(Token &Result, bool isEndOfMacro) {
     bool AtEndOfInjectedString = CurLexer && CurLexer->LexingInjectedString;
     RemoveTopOfLexerStack();
 
-    // If we're lexing an injected string, return EOF.
+    // If we're lexing an injected string, return EOF so that we know that
+    // we should stop lexing.
     if (AtEndOfInjectedString) {
-      assert(!InjectedTokenStack.empty());
-      InjectedTokenStack.pop_back();
       Result.startToken();
       Result.setKind(tok::eof);
       return true;

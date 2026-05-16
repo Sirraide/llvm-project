@@ -53,11 +53,7 @@ protected:
   bool ParsingFilename = false;
 
   /// True if this was constructed via Preprocessor::EnterInjectedString(); this
-  /// tells us to:
-  ///  1. keep an EOF token once we're done, and
-  ///  2. pop the currently injected tokens off the injection stack in the
-  ///     preprocessor.
-  ///
+  /// tells us to keep an EOF token once we're done.
   bool LexingInjectedString = false;
 
   /// True if in raw mode.

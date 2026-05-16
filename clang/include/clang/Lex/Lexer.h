@@ -184,13 +184,14 @@ public:
   Lexer(const Lexer &) = delete;
   Lexer &operator=(const Lexer &) = delete;
 
-  /// Create_PragmaLexer: Lexer constructor - Create a new lexer object for
-  /// _Pragma expansion.  This has a variety of magic semantics that this method
-  /// sets up.  It returns a new'd Lexer that must be delete'd when done.
-  static Lexer *Create_PragmaLexer(SourceLocation SpellingLoc,
-                                   SourceLocation ExpansionLocStart,
-                                   SourceLocation ExpansionLocEnd,
-                                   unsigned TokLen, Preprocessor &PP);
+  /// Create_ScratchLexer: Lexer constructor - Create a new lexer object for
+  /// that lexes from a scratch buffer. This has a variety of magic semantics
+  /// that this method sets up. It returns a new'd Lexer that must be delete'd
+  /// when done.
+  static Lexer *Create_ScratchLexer(StringRef Code,
+                                    SourceLocation ExpansionLocStart,
+                                    SourceLocation ExpansionLocEnd,
+                                    Preprocessor &PP);
 
   /// getFileLoc - Return the File Location for the file we are lexing out of.
   /// The physical location encodes the location where the characters come from,

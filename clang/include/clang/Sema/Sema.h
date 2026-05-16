@@ -860,16 +860,28 @@ enum AttrName { Target, TargetClones, TargetVersion };
 void inferNoReturnAttr(Sema &S, Decl *D);
 
 namespace sema {
+/// Proxy class to parse a list of tokens and/or code strings.
+///
+/// This is really intended to provide access to 'Parser' without making the
+/// Sema library depend on the Parser library. We sometimes may want to generate
+/// implicit AST nodes, but doing so by calling various ActOnXY() functions in
+/// hopefully the right order and with the right arguments is both verbose and
+/// fragile; instead, we'd much rather write regular C++ code and just parse it;
+/// the APIs defined in this class facilitate this.
 class TokenInjectionHandler {
 protected:
   TokenInjectionHandler() = default;
+
 public:
-  using Tokens = SmallVector<Token>;
   virtual ~TokenInjectionHandler() = default;
-  virtual ExprResult ParseTokensAsExpression(Tokens &&Tokens) = 0;
-  virtual ExprResult
-  ParseAsExpression(StringRef Code, SourceLocation InjectionLoc,
-                    ArrayRef<Token> InterpolatedTokens = {}) = 0;
+
+  /// Either a single token, or a string of source code that will be lexed
+  /// and preprocessed into tokens.
+  using TokenOrString = std::variant<StringRef, Token>;
+
+  /// Parse 'Code' as a single expression.
+  virtual ExprResult ParseAsExpression(ArrayRef<TokenOrString> Code,
+                                       SourceLocation InjectionLoc) = 0;
 };
 }
 
@@ -11246,8 +11258,6 @@ public:
   /// expansion statement and return its DeclStmt.
   StmtResult BuildCXXForRangeRangeVar(Scope *S, Expr *Range, QualType Type,
                                       bool Constexpr = false);
-
-  /// Build 'begin-expr' for a range-based for loop.
 
   /// FinishCXXForRangeStmt - Attach the body to a C++0x for-range statement.
   /// This is a separate step from ActOnCXXForRangeStmt because analysis of the

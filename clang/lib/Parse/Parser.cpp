@@ -53,39 +53,45 @@ class Parser::TokenInjectionHandlerImpl : public sema::TokenInjectionHandler {
 
 public:
   explicit TokenInjectionHandlerImpl(Parser& P) : P{P} {}
-  ExprResult
-  ParseTokensAsExpression(Tokens&& Toks) override {
+
+  ExprResult ParseAsExpression(ArrayRef<TokenOrString> Code,
+                               SourceLocation InjectionLoc) override {
+    // Collect tokens.
+    SmallVector<Token> Tokens;
+    for (const TokenOrString& TokOrStr : Code) {
+
+      if (const auto* T = std::get_if<Token>(&TokOrStr)) {
+        Tokens.push_back(*T);
+      } else {
+        auto Str = std::get<StringRef>(TokOrStr);
+        if (P.PP.LexTokensInString(Tokens, Str, InjectionLoc))
+          return ExprError();
+      }
+    }
+
     // Add an EOF token so we know when to stop.
-    assert(Toks.back().isNot(tok::eof));
-    Token &EofToken = Toks.emplace_back();
+    char EofMarker{};
+    Token &EofToken = Tokens.emplace_back();
     EofToken.startToken();
     EofToken.setKind(tok::eof);
-    P.PP.EnterTokenStream(Toks, /*DisableMacroExpansion=*/true,
-                          /*IsReinjected=*/false);
-    return ParseExpressionInTokenStream();
-  }
+    EofToken.setEofData(&EofMarker);
 
-  ExprResult ParseAsExpression(StringRef Code, SourceLocation InjectionLoc,
-                               ArrayRef<Token> InterpolatedTokens) override {
-    if (P.PP.EnterInjectedString(Code, InjectionLoc, InterpolatedTokens))
-      return ExprError();
-    return ParseExpressionInTokenStream();
-  }
-
-private:
-  ExprResult ParseExpressionInTokenStream() {
+    // Start parsing the tokens; we need to save the current token so we
+    // don't lose it, and consume it since EnterTokenStream() doesn't change
+    // the current token.
     SaveAndRestore SaveCurTok{P.Tok};
-
-    // We need to consume the current token to actually start parsing the
-    // injected tokens.
+    P.PP.EnterTokenStream(Tokens, /*DisableMacroExpansion=*/true,
+                          /*IsReinjected=*/false);
     P.ConsumeAnyToken();
     ExprResult Res = P.ParseExpression();
 
     // We should have parsed exactly one expression; if we still have tokens
-    // left, then there was probably an error, so skip them.
+    // left, then there was probably an error; don't diagnose this and just
+    // skip them.
     while (P.Tok.isNot(tok::eof))
       P.ConsumeAnyToken();
 
+    assert(P.Tok.getEofData() == &EofMarker);
     return Res;
   }
 };
