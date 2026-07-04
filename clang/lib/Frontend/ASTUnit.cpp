@@ -1680,6 +1680,13 @@ std::unique_ptr<ASTUnit> ASTUnit::LoadFromCompilerInvocation(
   std::unique_ptr<ASTUnit> AST(new ASTUnit(false));
   ConfigureDiags(Diags, *AST, CaptureDiagnostics);
   AST->DiagOpts = DiagOpts;
+  // ===== SRCC - Begin ======
+  // Copy codegen opts to ensure that these get serialised properly;
+  // without this, we end up serialising a default-constructed
+  // CodeGenOptions object, which causes an error when we then try and
+  // use the serialised PCH.
+  *AST->CodeGenOpts = CI->getCodeGenOpts();
+  // ===== SRCC - End =====
   AST->Diagnostics = Diags;
   AST->OnlyLocalDecls = OnlyLocalDecls;
   AST->CaptureDiagnostics = CaptureDiagnostics;
