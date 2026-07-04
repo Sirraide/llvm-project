@@ -33,6 +33,7 @@ cmake -G "Ninja" \
   -DLLVM_INCLUDE_TESTS=OFF \
   -DLIBCXX_INCLUDE_TESTS=OFF \
   -DLIBCXX_INCLUDE_BENCHMARKS=OFF \
+  -DLLVM_ENABLE_IDE=ON \
   -DCLANG_ENABLE_OBJC_REWRITER=OFF
 
 cmake --build out -- -j $((`nproc` - 2))

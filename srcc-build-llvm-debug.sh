@@ -29,6 +29,7 @@ cmake -G "Ninja" \
   -DLLVM_ENABLE_FFI=ON \
   -DLLVM_INCLUDE_BENCHMARKS=OFF \
   -DLLVM_INCLUDE_EXAMPLES=OFF \
+  -DLLVM_ENABLE_IDE=ON \
   -DLLVM_INCLUDE_TESTS=OFF
 
 cmake --build out-debug -- -j $((`nproc` - 2))
