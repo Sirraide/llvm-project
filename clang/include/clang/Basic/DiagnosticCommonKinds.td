@@ -478,3 +478,7 @@ def warn_exceptions_not_valid_on_target : Warning<
   " %select{'throw' is assumed to be never reached|'catch' block is ignored}1">,
   InGroup<OpenMPTargetException>;
 }
+
+// ===== SRCC - Begin =====
+include "clang/Basic/DiagnosticSRCCKinds.td"
+// ===== SRCC - End =====
