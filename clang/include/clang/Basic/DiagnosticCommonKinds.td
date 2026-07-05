@@ -485,3 +485,7 @@ def warn_try_not_valid_on_target : Warning<
   " 'catch' block is ignored">,
   InGroup<OpenMPTargetException>;
 }
+
+// ===== SRCC - Begin =====
+include "clang/Basic/DiagnosticSRCCKinds.td"
+// ===== SRCC - End =====

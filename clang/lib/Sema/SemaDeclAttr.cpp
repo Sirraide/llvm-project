@@ -6586,6 +6586,20 @@ BTFDeclTagAttr *Sema::mergeBTFDeclTagAttr(Decl *D, const BTFDeclTagAttr &AL) {
   return ::new (Context) BTFDeclTagAttr(Context, AL, AL.getBTFDeclTag());
 }
 
+// ===== SRCC - Begin =====
+static void handleSRCCDiagnosePointerComparison(Sema &S, Decl *D,
+                                                const ParsedAttr &AL) {
+  if (!isa<CXXRecordDecl>(D)) {
+    S.Diag(AL.getLoc(), diag::warn_attribute_wrong_decl_type)
+        << AL << AL.isRegularKeywordAttribute() << ExpectedClass;
+    return;
+  }
+
+  D->addAttr(::new (S.Context)
+                 SRCCDiagnosePointerComparisonAttr(S.Context, AL));
+}
+// ===== SRCC - End =====
+
 static void handleInterruptAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   // Dispatch the interrupt attribute based on the current target.
   switch (S.Context.getTargetInfo().getTriple().getArch()) {
@@ -7613,6 +7627,11 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
     S.Diag(AL.getLoc(), diag::err_attribute_invalid_on_decl)
         << AL << AL.isRegularKeywordAttribute() << D->getLocation();
     break;
+  // ===== SRCC - Begin =====
+  case ParsedAttr::AT_SRCCDiagnosePointerComparison:
+    handleSRCCDiagnosePointerComparison(S, D, AL);
+    break;
+  // ===== SRCC - End =====
   case ParsedAttr::AT_Interrupt:
     handleInterruptAttr(S, D, AL);
     break;

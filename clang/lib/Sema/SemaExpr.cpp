@@ -12979,6 +12979,38 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
       return QualType();
   }
 
+  // ===== SRCC - Begin =====
+  // Implement SRCCDiagnosePointerComparisonAttr.
+  auto CheckDisallowedPointerComparisonOperand = [&](Expr *Operand) {
+    auto AllowComparison = [](const CXXRecordDecl *RD) {
+      return !RD->hasAttr<SRCCDiagnosePointerComparisonAttr>();
+    };
+
+    if (!Operand)
+      return false;
+
+    QualType Ty = Operand->getType();
+    if (!Ty->isPointerType())
+      return false;
+
+    auto *RD = Ty->getPointeeType()->getAsCXXRecordDecl();
+    if (!RD || RD->isDependentType())
+      return false;
+
+    if (AllowComparison(RD) && (!RD->hasDefinition() || RD->forallBases(AllowComparison)))
+      return false;
+
+    Diag(Operand->getExprLoc(), diag::err_srcc_diagnose_pointer_comparison)
+        << Ty << Operand->getSourceRange();
+
+    return true;
+  };
+
+  if (CheckDisallowedPointerComparisonOperand(LHS.get()) ||
+      CheckDisallowedPointerComparisonOperand(RHS.get()))
+    return QualType();
+  // ===== SRCC - End =====
+
   checkArithmeticNull(*this, LHS, RHS, Loc, /*IsCompare=*/true);
   if (!getLangOpts().CPlusPlus && BinaryOperator::isEqualityOp(Opc)) {
     CheckPtrComparisonWithNullChar(LHS, RHS);

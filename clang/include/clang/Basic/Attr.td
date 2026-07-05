@@ -5493,3 +5493,7 @@ def Personality : InheritableAttr {
   let Subjects = SubjectList<[Function]>;
   let Documentation = [PersonalityDocs];
 }
+
+// ===== SRCC - Begin =====
+include "clang/Basic/SRCCAttrs.td"
+// ===== SRCC - End =====
