@@ -13225,10 +13225,6 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
   // ===== SRCC - Begin =====
   // Implement SRCCDiagnosePointerComparisonAttr.
   auto CheckDisallowedPointerComparisonOperand = [&](Expr *Operand) {
-    auto AllowComparison = [](const CXXRecordDecl *RD) {
-      return !RD->hasAttr<SRCCDiagnosePointerComparisonAttr>();
-    };
-
     if (!Operand)
       return false;
 
@@ -13240,7 +13236,7 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
     if (!RD || RD->isDependentType())
       return false;
 
-    if (AllowComparison(RD) && (!RD->hasDefinition() || RD->forallBases(AllowComparison)))
+    if (!RD->hasAttr<SRCCDiagnosePointerComparisonAttr>())
       return false;
 
     Diag(Operand->getExprLoc(), diag::err_srcc_diagnose_pointer_comparison)
