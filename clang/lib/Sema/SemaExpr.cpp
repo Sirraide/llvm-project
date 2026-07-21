@@ -13006,8 +13006,19 @@ QualType Sema::CheckCompareOperands(ExprResult &LHS, ExprResult &RHS,
     return true;
   };
 
-  if (CheckDisallowedPointerComparisonOperand(LHS.get()) ||
-      CheckDisallowedPointerComparisonOperand(RHS.get()))
+  // Disallow pointer comparisons involving a type annotated with (or derived
+  // from a type annotated with) [[clang::srcc_diagnose_pointer_comparison]],
+  // unless either operand is a null pointer literal.
+  //
+  // If either operand is *value* dependent, defer the comparison until
+  // instantiation time as we don't want to diagnose e.g. '(S*)a == (S*)b'
+  // if either 'a' or 'b' end up being of type 'nullptr_t'; note that the
+  // operands need not be *type* dependent in this case.
+  if (!LHS.get()->isValueDependent() && !RHS.get()->isValueDependent() &&
+      !Context.isSentinelNullExpr(LHS.get()) &&
+      !Context.isSentinelNullExpr(RHS.get()) &&
+      (CheckDisallowedPointerComparisonOperand(LHS.get()) ||
+       CheckDisallowedPointerComparisonOperand(RHS.get())))
     return QualType();
   // ===== SRCC - End =====
 
