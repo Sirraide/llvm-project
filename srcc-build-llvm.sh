@@ -13,7 +13,7 @@ export CXX=clang++
 ## We need to build compiler-rt too because we need ASAN.
 cmake -G "Ninja" \
   -S llvm \
-  -B out \
+  -B llvm/out \
   -DCMAKE_BUILD_TYPE=Release \
   -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld;mlir' \
   -DLLVM_ENABLE_RUNTIMES='libcxx;libcxxabi;libunwind;compiler-rt' \
@@ -35,4 +35,4 @@ cmake -G "Ninja" \
   -DLLVM_ENABLE_IDE=ON \
   -DCLANG_ENABLE_OBJC_REWRITER=OFF
 
-cmake --build out -- -j $((`nproc` - 2))
+cmake --build llvm/out -- -j $((`nproc` - 2))
