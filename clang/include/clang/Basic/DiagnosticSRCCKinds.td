@@ -27,4 +27,6 @@
 let Component = "Common" in {
 def err_srcc_diagnose_pointer_comparison : Error<
     "pointer comparison involving type %0 is disabled">;
+def err_srcc_diagnose_unless_caller : Error<
+    "function %0 must not be called directly; use it only to implement '%1'">;
 }

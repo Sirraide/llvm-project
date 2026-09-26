@@ -24,6 +24,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+
+//===----------------------------------------------------------------------===//
+// Docs
+//===----------------------------------------------------------------------===//
 def SRCCDiagnosePointerComparisonDocs : Documentation {
   let Category = DocCatType;
   let Heading = "srcc_diagnose_pointer_comparison";
@@ -33,8 +37,28 @@ diagnose any pointer comparisons involving a 'T*'.
   }];
 }
 
+def SRCCDiagnoseUnlessCallerDocs : Documentation {
+  let Category = DocCatFunction;
+  let Heading = "srcc_diagnose_unless_caller";
+  let Content = [{
+This attribute, when applied to a declaration of some function 'F' with a string
+argument of 'S' diagnoses all calls to 'F' unless they occur within a function
+named 'S'.
+  }];
+}
+
+//===----------------------------------------------------------------------===//
+// Attributes
+//===----------------------------------------------------------------------===//
 def SRCCDiagnosePointerComparison : InheritableAttr {
     let Spellings = [Clang<"srcc_diagnose_pointer_comparison">];
     let Subjects = SubjectList<[Record]>;
     let Documentation = [SRCCDiagnosePointerComparisonDocs];
+}
+
+def SRCCDiagnoseUnlessCaller : InheritableAttr {
+    let Spellings = [Clang<"srcc_diagnose_unless_caller">];
+    let Subjects = SubjectList<[Function]>;
+    let Args = [StringArgument<"AllowedCaller">];
+    let Documentation = [SRCCDiagnoseUnlessCallerDocs];
 }
