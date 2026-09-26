@@ -199,6 +199,7 @@
 // CHECK-NEXT: ReturnsTwice (SubjectMatchRule_function)
 // ===== SRCC - Begin ====
 // CHECK-NEXT: SRCCDiagnosePointerComparison (SubjectMatchRule_record)
+// CHECK-NEXT: SRCCDiagnoseUnlessCaller (SubjectMatchRule_function)
 // ===== SRCC - End ====
 // CHECK-NEXT: SYCLExternal (SubjectMatchRule_function)
 // CHECK-NEXT: SYCLKernelEntryPoint (SubjectMatchRule_function)

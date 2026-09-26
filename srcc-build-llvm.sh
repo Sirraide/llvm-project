@@ -21,7 +21,6 @@ cmake -G "Ninja" \
   -DLLVM_USE_LINKER=mold \
   -DLLVM_ENABLE_BINDINGS=OFF \
   -DLLVM_APPEND_VC_REV=OFF \
-  -DLLVM_OPTIMIZED_TABLEGEN=ON \
   -DLLVM_ENABLE_UNWIND_TABLES=OFF \
   -DLLVM_ENABLE_ASSERTIONS=ON \
   -DLLVM_UNREACHABLE_OPTIMIZE=OFF \
@@ -35,4 +34,4 @@ cmake -G "Ninja" \
   -DLLVM_ENABLE_IDE=ON \
   -DCLANG_ENABLE_OBJC_REWRITER=OFF
 
-cmake --build llvm/out -- -j $((`nproc` - 2))
+ninja -C llvm/out -j $((`nproc` - 2))

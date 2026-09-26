@@ -4519,6 +4519,19 @@ void Sema::checkCall(NamedDecl *FDecl, const FunctionProtoType *Proto,
       }))
     return;
 
+  // ===== SRCC - Begin ======
+  // Implement 'srcc_diagnose_unless_caller'.
+  if (FDecl && FDecl->hasAttr<SRCCDiagnoseUnlessCallerAttr>()) {
+    auto Enclosing = CurContext->getEnclosingFunction();
+    auto Attr = FDecl->getAttr<SRCCDiagnoseUnlessCallerAttr>();
+    if (!Enclosing || !Enclosing->getDeclName().isIdentifier() ||
+        Enclosing->getName() != Attr->getAllowedCaller()) {
+      Diag(Loc, diag::err_srcc_diagnose_unless_caller)
+          << FDecl->getDeclName() << Attr->getAllowedCaller();
+    }
+  }
+  // ===== SRCC - End ======
+
   // Printf and scanf checking.
   llvm::SmallBitVector CheckedVarArgs;
   if (FDecl) {

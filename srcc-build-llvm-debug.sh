@@ -12,7 +12,7 @@ export CXX=clang++
 
 cmake -G "Ninja" \
   -S llvm \
-  -B out-debug \
+  -B llvm/out-debug \
   -DCMAKE_BUILD_TYPE=Debug \
   -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;mlir' \
   -DLLVM_ENABLE_RUNTIMES='libcxx;libcxxabi;libunwind;compiler-rt' \

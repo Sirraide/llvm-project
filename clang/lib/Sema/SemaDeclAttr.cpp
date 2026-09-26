@@ -6683,6 +6683,21 @@ static void handleSRCCDiagnosePointerComparison(Sema &S, Decl *D,
   D->addAttr(::new (S.Context)
                  SRCCDiagnosePointerComparisonAttr(S.Context, AL));
 }
+
+static void handleSRCCDiagnoseUnlessCaller(Sema &S, Decl *D,
+                                           const ParsedAttr &AL) {
+  if (!isa<FunctionDecl>(D)) {
+    S.Diag(AL.getLoc(), diag::warn_attribute_wrong_decl_type)
+        << AL << AL.isRegularKeywordAttribute() << ExpectedFunction;
+    return;
+  }
+
+  StringRef Str;
+  if (!S.checkStringLiteralArgumentAttr(AL, 0, Str))
+    return;
+
+  D->addAttr(::new (S.Context) SRCCDiagnoseUnlessCallerAttr(S.Context, AL, Str));
+}
 // ===== SRCC - End =====
 
 static void handleInterruptAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
@@ -7715,6 +7730,9 @@ ProcessDeclAttribute(Sema &S, Decl *D, const ParsedAttr &AL,
   // ===== SRCC - Begin =====
   case ParsedAttr::AT_SRCCDiagnosePointerComparison:
     handleSRCCDiagnosePointerComparison(S, D, AL);
+    break;
+  case ParsedAttr::AT_SRCCDiagnoseUnlessCaller:
+    handleSRCCDiagnoseUnlessCaller(S, D, AL);
     break;
   // ===== SRCC - End =====
   case ParsedAttr::AT_Interrupt:
