@@ -31,4 +31,4 @@ cmake -G "Ninja" \
   -DLLVM_INCLUDE_EXAMPLES=OFF \
   -DLLVM_ENABLE_IDE=ON 
 
-cmake --build out-debug -- -j $((`nproc` - 2))
+cmake --build llvm/out-debug -- -j $((`nproc` - 2))
